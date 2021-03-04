@@ -15,7 +15,7 @@ import io.iohk.ethereum.network.handshaker.Handshaker.HandshakeResult
 import io.iohk.ethereum.network.p2p.messages.CommonMessages.SignedTransactions
 import io.iohk.ethereum.network.{EtcPeerManagerActor, Peer, PeerId, PeerManagerActor}
 import io.iohk.ethereum.transactions.PendingTransactionsManager._
-import io.iohk.ethereum.{NormalPatience, Timeouts, crypto}
+import io.iohk.ethereum.{crypto, NormalPatience, Timeouts}
 import io.iohk.ethereum.transactions.SignedTransactionsFilterActor.ProperSignedTransactions
 import io.iohk.ethereum.utils.TxPoolConfig
 import org.scalatest.concurrent.ScalaFutures

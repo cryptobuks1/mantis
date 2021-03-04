@@ -44,7 +44,7 @@ final case class DownloaderState(
     copy(activeRequests = activeRequests + (peerRequest.peer.id -> peerRequest.nodes), nodesToGet = newNodesToget)
   }
 
-  def handleRequestFailure(from: Peer): DownloaderState = {
+  def handleRequestFailure(from: Peer): DownloaderState =
     activeRequests
       .get(from.id)
       .map { requestedNodes =>
@@ -55,10 +55,8 @@ final case class DownloaderState(
         copy(activeRequests = activeRequests - from.id, nodesToGet = newNodesToGet)
       }
       .getOrElse(this)
-  }
 
-  /**
-    * Responses from peers should be delivered in order, but can contain gaps or can be not full, so we cannot fail
+  /** Responses from peers should be delivered in order, but can contain gaps or can be not full, so we cannot fail
     * on first not matching response.
     * Matched responses are returned in correct order, the hashes to be rescheduled are returned in no particular order
     * as they will either way end up in map of hashes to be re-downloaded
@@ -74,7 +72,7 @@ final case class DownloaderState(
         remainingResponses: List[ByteString],
         nonReceivedRequested: List[ByteString],
         processed: List[SyncResponse]
-    ): (List[ByteString], List[SyncResponse]) = {
+    ): (List[ByteString], List[SyncResponse]) =
       if (remainingRequestedHashes.isEmpty) {
         (nonReceivedRequested, processed.reverse)
       } else {
@@ -104,14 +102,13 @@ final case class DownloaderState(
           )
         }
       }
-    }
 
     val firstReceivedResponse = SyncResponse(kec256(received.head), received.head)
 
     go(requested.toList, firstReceivedResponse, received.tail, List.empty, List.empty)
   }
 
-  def handleRequestSuccess(from: Peer, receivedMessage: NodeData): (ResponseProcessingResult, DownloaderState) = {
+  def handleRequestSuccess(from: Peer, receivedMessage: NodeData): (ResponseProcessingResult, DownloaderState) =
     activeRequests
       .get(from.id)
       .map { requestedHashes =>
@@ -142,7 +139,6 @@ final case class DownloaderState(
         }
       }
       .getOrElse((UnrequestedResponse, this))
-  }
 
   def assignTasksToPeers(
       peers: NonEmptyList[Peer],
@@ -155,7 +151,7 @@ final case class DownloaderState(
         nodesRemaining: Seq[ByteString],
         createdRequests: List[PeerRequest],
         currentState: DownloaderState
-    ): (Seq[PeerRequest], DownloaderState) = {
+    ): (Seq[PeerRequest], DownloaderState) =
       if (peersRemaining.isEmpty || nodesRemaining.isEmpty) {
         (createdRequests.reverse, currentState.scheduleNewNodesForRetrieval(nodesRemaining))
       } else {
@@ -169,7 +165,6 @@ final case class DownloaderState(
           currentState.addActiveRequest(peerRequest)
         )
       }
-    }
 
     val currentNodesToDeliver = newNodes.map(nodes => nonDownloadedNodes ++ nodes).getOrElse(nonDownloadedNodes)
     if (currentNodesToDeliver.isEmpty) {

@@ -207,9 +207,8 @@ class CachedReferenceCountedStorageSpec
       Some(CachedReferenceCountedStorage.saveOnlyNotificationHandler(nodeStorage))
     )
 
-    def generateKeys(to: Int, from: Int = 1): List[(ByteString, Array[Byte])] = {
+    def generateKeys(to: Int, from: Int = 1): List[(ByteString, Array[Byte])] =
       (from to to).map(i => kec256(ByteString(s"key$i")) -> ByteString(s"value$i").toArray[Byte]).toList
-    }
 
     def insertRangeKeys(n: Int, storage: NodesKeyValueStorage): Seq[(ByteString, Array[Byte])] = {
       val toInsert = generateKeys(n)
@@ -221,7 +220,7 @@ class CachedReferenceCountedStorageSpec
       updates.foldLeft(List.empty[ByteString], List.empty[ByteString]) { (acc, up) =>
         up match {
           case Increase(hash) => acc.copy(_2 = hash :: acc._2)
-          case New(hash) => acc.copy(_2 = hash :: acc._2)
+          case New(hash)      => acc.copy(_2 = hash :: acc._2)
           case Decrease(hash) => acc.copy(_1 = hash :: acc._1)
         }
       }
@@ -233,10 +232,9 @@ class CachedReferenceCountedStorageSpec
       storage
     }
 
-    def assertKeysExists(storage: NodesKeyValueStorage, keys: List[(ByteString, Array[Byte])]): Unit = {
+    def assertKeysExists(storage: NodesKeyValueStorage, keys: List[(ByteString, Array[Byte])]): Unit =
       keys.foreach { case (key, value) =>
-        assert(storage.get(key).exists(enc => enc sameElements value))
+        assert(storage.get(key).exists(enc => enc.sameElements(value)))
       }
-    }
   }
 }

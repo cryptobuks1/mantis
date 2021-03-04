@@ -16,7 +16,7 @@ import org.scalatest.matchers.should.Matchers
 
 class StateStorageSpec extends AnyFlatSpec with Matchers with ScalaCheckPropertyChecks with ObjectGenerators {
 
-  def saveNodeToDbTest(storage: StateStorage, nodeStorage: NodesKeyValueStorage): Unit = {
+  def saveNodeToDbTest(storage: StateStorage, nodeStorage: NodesKeyValueStorage): Unit =
     forAll(keyValueByteStringGen(32)) { keyvals =>
       keyvals.foreach { case (key, value) =>
         storage.saveNode(key, value, 10)
@@ -25,12 +25,11 @@ class StateStorageSpec extends AnyFlatSpec with Matchers with ScalaCheckProperty
       keyvals.foreach { case (key, value) =>
         val result = nodeStorage.get(key)
         assert(result.isDefined)
-        assert(result.get sameElements value)
+        assert(result.get.sameElements(value))
       }
     }
-  }
 
-  def getNodeFromDbTest(stateStorage: StateStorage): Unit = {
+  def getNodeFromDbTest(stateStorage: StateStorage): Unit =
     forAll(nodeGen) { node =>
       val storage = stateStorage.getBackingStorage(0)
       storage.updateNodesInStorage(Some(node), Nil)
@@ -38,16 +37,14 @@ class StateStorageSpec extends AnyFlatSpec with Matchers with ScalaCheckProperty
       assert(fromStorage.isDefined)
       assert(fromStorage.get == node)
     }
-  }
 
-  def provideStorageForTrieTest(stateStorage: StateStorage): Unit = {
+  def provideStorageForTrieTest(stateStorage: StateStorage): Unit =
     forAll(nodeGen) { node =>
       val storage = stateStorage.getBackingStorage(0)
       storage.updateNodesInStorage(Some(node), Nil)
       val fromStorage = storage.get(node.hash)
-      assert(fromStorage.hash sameElements node.hash)
+      assert(fromStorage.hash.sameElements(node.hash))
     }
-  }
 
   "ArchiveStateStorage" should "save node directly to db" in new TestSetup {
     saveNodeToDbTest(archiveStateStorage, archiveNodeStorage)

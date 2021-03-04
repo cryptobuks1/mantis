@@ -44,20 +44,17 @@ class EthTxService(
     with ResolveBlock {
   import EthTxService._
 
-  /**
-    * Implements the eth_getRawTransactionByHash - fetch raw transaction data of a transaction with the given hash.
+  /** Implements the eth_getRawTransactionByHash - fetch raw transaction data of a transaction with the given hash.
     *
     * The tx requested will be fetched from the pending tx pool or from the already executed txs (depending on the tx state)
     *
     * @param req with the tx requested (by it's hash)
     * @return the raw transaction hask or None if the client doesn't have the tx
     */
-  def getRawTransactionByHash(req: GetTransactionByHashRequest): ServiceResponse[RawTransactionResponse] = {
+  def getRawTransactionByHash(req: GetTransactionByHashRequest): ServiceResponse[RawTransactionResponse] =
     getTransactionDataByHash(req.txHash).map(asRawTransactionResponse)
-  }
 
-  /**
-    * eth_getRawTransactionByBlockHashAndIndex returns raw transaction data of a transaction with the block hash and index of which it was mined
+  /** eth_getRawTransactionByBlockHashAndIndex returns raw transaction data of a transaction with the block hash and index of which it was mined
     *
     * @return the tx requested or None if the client doesn't have the block or if there's no tx in the that index
     */
@@ -70,8 +67,7 @@ class EthTxService(
   private def asRawTransactionResponse(txResponse: Option[TransactionData]): Right[Nothing, RawTransactionResponse] =
     Right(RawTransactionResponse(txResponse.map(_.stx)))
 
-  /**
-    * Implements the eth_getTransactionByHash method that fetches a requested tx.
+  /** Implements the eth_getTransactionByHash method that fetches a requested tx.
     * The tx requested will be fetched from the pending tx pool or from the already executed txs (depending on the tx state)
     *
     * @param req with the tx requested (by it's hash)
@@ -128,8 +124,7 @@ class EthTxService(
       Right(GetTransactionReceiptResponse(result))
     }
 
-  /**
-    * eth_getTransactionByBlockHashAndIndex that returns information about a transaction by block hash and
+  /** eth_getTransactionByBlockHashAndIndex that returns information about a transaction by block hash and
     * transaction index position.
     *
     * @return the tx requested or None if the client doesn't have the block or if there's no tx in the that index
@@ -183,8 +178,7 @@ class EthTxService(
     }
   }
 
-  /**
-    * eth_getTransactionByBlockNumberAndIndex Returns the information about a transaction with
+  /** eth_getTransactionByBlockNumberAndIndex Returns the information about a transaction with
     * the block number and index of which it was mined.
     *
     * @param req block number and index
@@ -198,8 +192,7 @@ class EthTxService(
       .map(GetTransactionByBlockNumberAndIndexResponse)
   }
 
-  /**
-    * eth_getRawTransactionByBlockNumberAndIndex Returns raw transaction data of a transaction
+  /** eth_getRawTransactionByBlockNumberAndIndex Returns raw transaction data of a transaction
     * with the block number and index of which it was mined.
     *
     * @param req block number and ordering in which a transaction is mined within its block
@@ -213,7 +206,7 @@ class EthTxService(
       .map(RawTransactionResponse)
   }
 
-  private def getTransactionDataByBlockNumberAndIndex(block: BlockParam, transactionIndex: BigInt) = {
+  private def getTransactionDataByBlockNumberAndIndex(block: BlockParam, transactionIndex: BigInt) =
     resolveBlock(block)
       .map { blockWithTx =>
         val blockTxs = blockWithTx.block.body.transactionList
@@ -229,10 +222,8 @@ class EthTxService(
       }
       .left
       .flatMap(_ => Right(None))
-  }
 
-  /**
-    * Returns the transactions that are pending in the transaction pool and have a from address that is one of the accounts this node manages.
+  /** Returns the transactions that are pending in the transaction pool and have a from address that is one of the accounts this node manages.
     *
     * @param req request
     * @return pending transactions

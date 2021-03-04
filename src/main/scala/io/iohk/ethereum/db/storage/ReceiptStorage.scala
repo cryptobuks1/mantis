@@ -8,8 +8,7 @@ import io.iohk.ethereum.domain.{Address, SuccessOutcome, _}
 import io.iohk.ethereum.utils.ByteUtils.{byteSequenceToBuffer, compactPickledBytes}
 import boopickle.DefaultBasic._
 
-/**
-  * This class is used to store the Receipts, by using:
+/** This class is used to store the Receipts, by using:
   * Key: hash of the block to which the list of receipts belong
   * Value: the list of receipts
   */
@@ -28,7 +27,7 @@ class ReceiptStorage(val dataSource: DataSource) extends TransactionalKeyValueSt
     compactPickledBytes(Pickle.intoBytes(receipts))
 
   override def valueDeserializer: IndexedSeq[Byte] => ReceiptSeq =
-    byteSequenceToBuffer _ andThen Unpickle[Seq[Receipt]].fromBytes
+    (byteSequenceToBuffer _).andThen(Unpickle[Seq[Receipt]].fromBytes)
 }
 
 object ReceiptStorage {
@@ -39,13 +38,13 @@ object ReceiptStorage {
     transformPickler[ByteString, Array[Byte]](ByteString(_))(_.toArray[Byte])
   implicit val hashOutcomePickler: Pickler[HashOutcome] = transformPickler[HashOutcome, ByteString] { hash =>
     HashOutcome(hash)
-  } { outcome => outcome.stateHash }
+  }(outcome => outcome.stateHash)
   implicit val successOutcomePickler: Pickler[SuccessOutcome.type] = transformPickler[SuccessOutcome.type, ByteString] {
     _ => SuccessOutcome
-  } { _ => ByteString(Array(1.toByte)) }
+  }(_ => ByteString(Array(1.toByte)))
   implicit val failureOutcomePickler: Pickler[FailureOutcome.type] = transformPickler[FailureOutcome.type, ByteString] {
     _ => FailureOutcome
-  } { _ => ByteString(Array(0.toByte)) }
+  }(_ => ByteString(Array(0.toByte)))
   implicit val transactionOutcomePickler: Pickler[TransactionOutcome] = compositePickler[TransactionOutcome]
     .addConcreteType[HashOutcome]
     .addConcreteType[SuccessOutcome.type]
@@ -56,7 +55,7 @@ object ReceiptStorage {
   implicit val txLogEntryPickler: Pickler[TxLogEntry] =
     transformPickler[TxLogEntry, (Address, Seq[ByteString], ByteString)] { case (address, topics, data) =>
       TxLogEntry(address, topics, data)
-    } { entry => (entry.loggerAddress, entry.logTopics, entry.data) }
+    }(entry => (entry.loggerAddress, entry.logTopics, entry.data))
 
   implicit val receiptPickler: Pickler[Receipt] =
     transformPickler[Receipt, (TransactionOutcome, BigInt, ByteString, Seq[TxLogEntry])] {

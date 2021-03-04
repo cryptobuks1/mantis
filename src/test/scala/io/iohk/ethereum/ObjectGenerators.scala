@@ -43,26 +43,23 @@ trait ObjectGenerators {
 
   def seqByteStringOfNItemsGen(n: Int): Gen[Seq[ByteString]] = Gen.listOf(byteStringOfLengthNGen(n))
 
-  def hexPrefixDecodeParametersGen(): Gen[(Array[Byte], Boolean)] = {
+  def hexPrefixDecodeParametersGen(): Gen[(Array[Byte], Boolean)] =
     for {
       aByteList <- Gen.nonEmptyListOf(Arbitrary.arbitrary[Byte])
       t <- Arbitrary.arbitrary[Boolean]
     } yield (aByteList.toArray, t)
-  }
 
-  def keyValueListGen(minValue: Int = Int.MinValue, maxValue: Int = Int.MaxValue): Gen[List[(Int, Int)]] = {
+  def keyValueListGen(minValue: Int = Int.MinValue, maxValue: Int = Int.MaxValue): Gen[List[(Int, Int)]] =
     for {
       values <- Gen.chooseNum(minValue, maxValue)
       aKeyList <- Gen.nonEmptyListOf(values).map(_.distinct)
     } yield aKeyList.zip(aKeyList)
-  }
 
-  def keyValueByteStringGen(size: Int): Gen[List[(ByteString, Array[Byte])]] = {
+  def keyValueByteStringGen(size: Int): Gen[List[(ByteString, Array[Byte])]] =
     for {
       byteStringList <- Gen.nonEmptyListOf(byteStringOfLengthNGen(size))
       arrayList <- Gen.nonEmptyListOf(byteArrayOfNItemsGen(size))
     } yield byteStringList.zip(arrayList)
-  }
 
   def receiptGen(): Gen[Receipt] = for {
     postTransactionStateHash <- byteArrayOfNItemsGen(32)
@@ -142,11 +139,10 @@ trait ObjectGenerators {
     }
   }
 
-  def genKey(rnd: SecureRandom): Gen[AsymmetricCipherKeyPair] = {
+  def genKey(rnd: SecureRandom): Gen[AsymmetricCipherKeyPair] =
     Gen.resultOf { _: Unit =>
       crypto.generateKeyPair(rnd)
     }
-  }
 
   def newBlockGen(secureRandom: SecureRandom, chainId: Option[Byte]): Gen[NewBlock] = for {
     blockHeader <- blockHeaderGen
@@ -167,8 +163,8 @@ trait ObjectGenerators {
     checkpoint <- if (optOut.isDefined) Gen.option(fakeCheckpointOptGen(0, 5)) else Gen.const(None)
   } yield (optOut, checkpoint) match {
     case (Some(definedOptOut), Some(definedCheckpoint)) => HefPostEcip1097(definedOptOut, definedCheckpoint)
-    case (Some(definedOptOut), None) => HefPostEcip1098(definedOptOut)
-    case _ => HefEmpty
+    case (Some(definedOptOut), None)                    => HefPostEcip1098(definedOptOut)
+    case _                                              => HefEmpty
   }
 
   def blockHeaderGen: Gen[BlockHeader] = for {

@@ -95,7 +95,7 @@ trait FaucetJsonRpcHttpServerBuilder {
 trait ShutdownHookBuilder {
   self: ActorSystemBuilder with FaucetConfigBuilder with Logger =>
 
-  def shutdown(): Unit = {
+  def shutdown(): Unit =
     Await.ready(
       system
         .terminate()
@@ -105,7 +105,6 @@ trait ShutdownHookBuilder {
         )(system.dispatcher),
       faucetConfig.shutdownTimeout
     )
-  }
 }
 
 class FaucetServer
@@ -133,6 +132,6 @@ class FaucetServer
   private[this] def startJsonRpcHttpServer() =
     faucetJsonRpcHttpServer match {
       case Right(jsonRpcServer) => jsonRpcServer.run()
-      case Left(error) => throw new RuntimeException(s"$error")
+      case Left(error)          => throw new RuntimeException(s"$error")
     }
 }

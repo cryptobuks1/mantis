@@ -21,8 +21,7 @@ import org.bouncycastle.util.encoders.Hex
 import scala.concurrent.duration._
 import scala.util.{Failure, Random, Success, Try}
 
-/**
-  * Implementation of Ethash CPU mining worker.
+/** Implementation of Ethash CPU mining worker.
   * Could be started by switching configuration flag "consensus.mining-enabled" to true
   */
 class EthashMiner(
@@ -35,7 +34,7 @@ class EthashMiner(
 
   import EthashMiner._
 
-  private implicit val scheduler: Scheduler = Scheduler(context.dispatcher)
+  implicit private val scheduler: Scheduler = Scheduler(context.dispatcher)
 
   var currentEpoch: Option[Long] = None
   var currentEpochDagSize: Option[Long] = None
@@ -45,60 +44,56 @@ class EthashMiner(
 
   def stopped: Receive = {
     case StartMining =>
-      context become started
+      context.become(started)
       self ! ProcessMining
     case ProcessMining => // nothing
   }
 
   def started: Receive = {
-    case StopMining => context become stopped
+    case StopMining    => context.become(stopped)
     case ProcessMining => processMining()
   }
 
-  def processMining(): Unit = {
+  def processMining(): Unit =
     blockchain.getBestBlock() match {
       case Some(blockValue) =>
         blockCreator
           .getBlockForMining(blockValue)
-          .map {
-            case PendingBlockAndState(PendingBlock(block, _), _) => {
-              val blockNumber = block.header.number.toLong + 1
-              val epoch = EthashUtils.epoch(blockNumber, blockCreator.blockchainConfig.ecip1099BlockNumber.toLong)
-              val (dag, dagSize) = calculateDagSize(blockNumber, epoch)
-              val headerHash = crypto.kec256(BlockHeader.getEncodedWithoutNonce(block.header))
-              val startTime = System.nanoTime()
-              val mineResult =
-                mine(headerHash, block.header.difficulty.toLong, dagSize, dag, blockCreator.miningConfig.mineRounds)
-              val time = System.nanoTime() - startTime
-              //FIXME: consider not reporting hash rate when time delta is zero
-              val hashRate = if (time > 0) (mineResult.triedHashes.toLong * 1000000000) / time else Long.MaxValue
-              ethMiningService.submitHashRate(SubmitHashRateRequest(hashRate, ByteString("mantis-miner")))
-              mineResult match {
-                case MiningSuccessful(_, pow, nonce) =>
-                  log.info(
-                    s"Mining successful with ${ByteStringUtils.hash2string(pow.mixHash)} and nonce ${ByteStringUtils.hash2string(nonce)}"
-                  )
-                  syncController ! SyncProtocol.MinedBlock(
-                    block.copy(header = block.header.copy(nonce = nonce, mixHash = pow.mixHash))
-                  )
-                case _ => log.info("Mining unsuccessful")
-              }
-              self ! ProcessMining
+          .map { case PendingBlockAndState(PendingBlock(block, _), _) =>
+            val blockNumber = block.header.number.toLong + 1
+            val epoch = EthashUtils.epoch(blockNumber, blockCreator.blockchainConfig.ecip1099BlockNumber.toLong)
+            val (dag, dagSize) = calculateDagSize(blockNumber, epoch)
+            val headerHash = crypto.kec256(BlockHeader.getEncodedWithoutNonce(block.header))
+            val startTime = System.nanoTime()
+            val mineResult =
+              mine(headerHash, block.header.difficulty.toLong, dagSize, dag, blockCreator.miningConfig.mineRounds)
+            val time = System.nanoTime() - startTime
+            //FIXME: consider not reporting hash rate when time delta is zero
+            val hashRate = if (time > 0) (mineResult.triedHashes.toLong * 1000000000) / time else Long.MaxValue
+            ethMiningService.submitHashRate(SubmitHashRateRequest(hashRate, ByteString("mantis-miner")))
+            mineResult match {
+              case MiningSuccessful(_, pow, nonce) =>
+                log.info(
+                  s"Mining successful with ${ByteStringUtils.hash2string(pow.mixHash)} and nonce ${ByteStringUtils.hash2string(nonce)}"
+                )
+                syncController ! SyncProtocol.MinedBlock(
+                  block.copy(header = block.header.copy(nonce = nonce, mixHash = pow.mixHash))
+                )
+              case _ => log.info("Mining unsuccessful")
             }
+            self ! ProcessMining
           }
           .onErrorHandle { ex =>
             log.error(ex, "Unable to get block for mining")
             context.system.scheduler.scheduleOnce(10.seconds, self, ProcessMining)
           }
           .runAsyncAndForget
-      case None => {
+      case None =>
         log.error("Unable to get block for mining, getBestBlock() returned None")
         context.system.scheduler.scheduleOnce(10.seconds, self, ProcessMining)
-      }
     }
-  }
 
-  private def calculateDagSize(blockNumber: Long, epoch: Long): (Array[Array[Int]], Long) = {
+  private def calculateDagSize(blockNumber: Long, epoch: Long): (Array[Array[Int]], Long) =
     (currentEpoch, currentEpochDag, currentEpochDagSize) match {
       case (Some(`epoch`), Some(dag), Some(dagSize)) => (dag, dagSize)
       case _ =>
@@ -119,13 +114,11 @@ class EthashMiner(
         currentEpochDagSize = Some(dagSize)
         (dag, dagSize)
     }
-  }
 
-  private def dagFile(seed: ByteString): File = {
+  private def dagFile(seed: ByteString): File =
     new File(
       s"${blockCreator.miningConfig.ethashDir}/full-R${EthashUtils.Revision}-${Hex.toHexString(seed.take(8).toArray[Byte])}"
     )
-  }
 
   private def generateDagAndSaveToFile(epoch: Long, dagNumHashes: Int, seed: ByteString): Array[Array[Int]] = {
     // scalastyle:off magic.number
@@ -214,7 +207,7 @@ object EthashMiner {
       new EthashMiner(blockchain, blockCreator, syncController, ethMiningService)
     ).withDispatcher(BlockForgerDispatcherId)
 
-  def apply(node: Node): ActorRef = {
+  def apply(node: Node): ActorRef =
     node.consensus match {
       case consensus: EthashConsensus =>
         val blockCreator = new EthashBlockCreator(
@@ -234,7 +227,6 @@ object EthashMiner {
       case consensus =>
         wrongConsensusArgument[EthashConsensus](consensus)
     }
-  }
 
   private case object ProcessMining
 

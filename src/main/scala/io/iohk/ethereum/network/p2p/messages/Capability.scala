@@ -2,7 +2,7 @@ package io.iohk.ethereum.network.p2p.messages
 
 import io.iohk.ethereum.rlp.RLPImplicitConversions._
 import io.iohk.ethereum.rlp.RLPImplicits._
-import io.iohk.ethereum.rlp.{RLPEncodeable, RLPException, RLPList, RLPSerializable, rawDecode}
+import io.iohk.ethereum.rlp.{rawDecode, RLPEncodeable, RLPException, RLPList, RLPSerializable}
 
 case class Capability(name: String, version: Byte)
 
@@ -18,7 +18,7 @@ object Capability {
   implicit class CapabilityRLPEncodableDec(val rLPEncodeable: RLPEncodeable) extends AnyVal {
     def toCapability: Capability = rLPEncodeable match {
       case RLPList(name, version) => Capability(name, version)
-      case _ => throw new RLPException("Cannot decode Capability")
+      case _                      => throw new RLPException("Cannot decode Capability")
     }
   }
 

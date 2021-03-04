@@ -29,7 +29,7 @@ class EthashMinerSpec
 
   final val EthashMinerSpecTag = Tag("EthashMinerSpec")
 
-  private implicit val timeout: Duration = 10.minutes
+  implicit private val timeout: Duration = 10.minutes
 
   "EthashMiner" should "mine valid blocks" taggedAs (EthashMinerSpecTag) in new TestSetup {
     val parent = origin
@@ -45,15 +45,15 @@ class EthashMinerSpec
       .returning(PendingBlockAndState(PendingBlock(bfm, Nil), fakeWorld))
       .atLeastOnce()
 
-    ommersPool.setAutoPilot((sender: ActorRef, _: Any) => {
+    ommersPool.setAutoPilot { (sender: ActorRef, _: Any) =>
       sender ! OmmersPool.Ommers(Nil)
       TestActor.KeepRunning
-    })
+    }
 
-    pendingTransactionsManager.setAutoPilot((sender: ActorRef, _: Any) => {
+    pendingTransactionsManager.setAutoPilot { (sender: ActorRef, _: Any) =>
       sender ! PendingTransactionsManager.PendingTransactionsResponse(Nil)
       TestActor.KeepRunning
-    })
+    }
 
     miner ! MinerProtocol.StartMining
 

@@ -32,29 +32,27 @@ class OmmersPool(blockchain: Blockchain, ommersPoolSize: Int, ommerGenerationLim
 
   private def collectAncestors(parentHash: ByteString, generationLimit: Int): List[BlockHeader] = {
     @tailrec
-    def rec(hash: ByteString, limit: Int, acc: List[BlockHeader]): List[BlockHeader] = {
+    def rec(hash: ByteString, limit: Int, acc: List[BlockHeader]): List[BlockHeader] =
       if (limit > 0) {
         blockchain.getBlockHeaderByHash(hash) match {
           case Some(bh) => rec(bh.parentHash, limit - 1, acc :+ bh)
-          case None => acc
+          case None     => acc
         }
       } else {
         acc
       }
-    }
     rec(parentHash, generationLimit, List.empty)
   }
 
   private def logStatus(event: String, ommers: Seq[BlockHeader]): Unit = {
-    lazy val ommersAsString: Seq[String] = ommers.map { bh => s"[number = ${bh.number}, hash = ${bh.hashAsHexString}]" }
+    lazy val ommersAsString: Seq[String] = ommers.map(bh => s"[number = ${bh.number}, hash = ${bh.hashAsHexString}]")
     log.debug(s"$event ${ommersAsString}")
   }
 }
 
 object OmmersPool {
 
-  /**
-    * As is stated on section 11.1, eq. (143) of the YP
+  /** As is stated on section 11.1, eq. (143) of the YP
     *
     * @param ommerGenerationLimit should be === 6
     * @param returnedOmmersSizeLimit should be === 2

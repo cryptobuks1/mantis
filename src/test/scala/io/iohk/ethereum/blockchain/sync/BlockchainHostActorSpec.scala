@@ -15,7 +15,7 @@ import io.iohk.ethereum.network.p2p.messages.PV63._
 import io.iohk.ethereum.network.p2p.messages.PV63.MptNodeEncoders._
 import io.iohk.ethereum.network.rlpx.RLPxConnectionHandler.RLPxConfiguration
 import io.iohk.ethereum.network.{EtcPeerManagerActor, PeerId}
-import io.iohk.ethereum.{Fixtures, Timeouts, crypto}
+import io.iohk.ethereum.{crypto, Fixtures, Timeouts}
 import org.bouncycastle.util.encoders.Hex
 
 import scala.concurrent.duration.{FiniteDuration, _}
@@ -259,7 +259,7 @@ class BlockchainHostActorSpec extends AnyFlatSpec with Matchers {
   }
 
   trait TestSetup extends EphemBlockchainTestSetup {
-    override implicit lazy val system = ActorSystem("BlockchainHostActor_System")
+    implicit override lazy val system = ActorSystem("BlockchainHostActor_System")
 
     blockchain.storeBlockHeader(Fixtures.Blocks.Genesis.header).commit()
 

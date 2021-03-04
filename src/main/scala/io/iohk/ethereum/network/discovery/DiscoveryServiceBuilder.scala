@@ -8,7 +8,7 @@ import io.iohk.ethereum.utils.{NodeStatus, ServerStatus}
 import io.iohk.scalanet.discovery.crypto.{PrivateKey, PublicKey, SigAlg}
 import io.iohk.scalanet.discovery.ethereum.{Node => ENode, EthereumNodeRecord}
 import io.iohk.scalanet.discovery.ethereum.v4
-import io.iohk.scalanet.peergroup.{InetMultiAddress, ExternalAddressResolver}
+import io.iohk.scalanet.peergroup.{ExternalAddressResolver, InetMultiAddress}
 import io.iohk.scalanet.peergroup.udp.StaticUDPPeerGroup
 import java.net.InetAddress
 import java.net.InetSocketAddress

@@ -12,7 +12,7 @@ import io.iohk.ethereum.jsonrpc.{JsonRpcControllerMetrics, JsonRpcError, JsonRpc
 import io.iohk.ethereum.utils.Logger
 import monix.eval.Task
 import org.json4s.JsonDSL._
-import org.json4s.{DefaultFormats, native}
+import org.json4s.{native, DefaultFormats}
 
 import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext
@@ -30,8 +30,7 @@ trait JsonRpcBaseController {
 
   import JsonRpcBaseController._
 
-  /**
-    * FIXME: We are making mandatory to pass a config in all the Controllers that implements this trait
+  /** FIXME: We are making mandatory to pass a config in all the Controllers that implements this trait
     * when it is just used for the disabled methods.
     * We should change this behaviour in order to remove this unnecessary dependency.
     */
@@ -55,7 +54,7 @@ trait JsonRpcBaseController {
     }
 
     val handleFn: PartialFunction[JsonRpcRequest, Task[JsonRpcResponse]] =
-      enabledApis.foldLeft(notFoundFn)((fn, api) => apisHandleFns.getOrElse(api, PartialFunction.empty) orElse fn)
+      enabledApis.foldLeft(notFoundFn)((fn, api) => apisHandleFns.getOrElse(api, PartialFunction.empty).orElse(fn))
 
     handleFn(request)
       .flatTap {
@@ -84,13 +83,13 @@ trait JsonRpcBaseController {
   def handle[Req, Res](
       fn: Req => Task[Either[JsonRpcError, Res]],
       rpcReq: JsonRpcRequest
-  )(implicit dec: JsonMethodDecoder[Req], enc: JsonEncoder[Res]): Task[JsonRpcResponse] = {
+  )(implicit dec: JsonMethodDecoder[Req], enc: JsonEncoder[Res]): Task[JsonRpcResponse] =
     dec.decodeJson(rpcReq.params) match {
       case Right(req) =>
         fn(req)
           .map {
             case Right(success) => successResponse(rpcReq, success)
-            case Left(error) => errorResponse(rpcReq, error)
+            case Left(error)    => errorResponse(rpcReq, error)
           }
           .recover { case ex =>
             log.error("Failed to handle RPC request", ex)
@@ -99,7 +98,6 @@ trait JsonRpcBaseController {
       case Left(error) =>
         Task.now(errorResponse(rpcReq, error))
     }
-  }
 
   private def successResponse[T](req: JsonRpcRequest, result: T)(implicit enc: JsonEncoder[T]): JsonRpcResponse =
     JsonRpcResponse(req.jsonrpc, Some(enc.encodeJson(result)), None, req.id.getOrElse(0))

@@ -44,8 +44,8 @@ object BlockHelpers extends SecureRandomBuilder {
     }
 
   def resetHeaderExtraFields(hef: BlockHeader.HeaderExtraFields): BlockHeader.HeaderExtraFields = hef match {
-    case HeaderExtraFields.HefEmpty => HeaderExtraFields.HefEmpty
-    case HeaderExtraFields.HefPostEcip1098(_) => HeaderExtraFields.HefPostEcip1098(treasuryOptOut = false)
+    case HeaderExtraFields.HefEmpty              => HeaderExtraFields.HefEmpty
+    case HeaderExtraFields.HefPostEcip1098(_)    => HeaderExtraFields.HefPostEcip1098(treasuryOptOut = false)
     case HeaderExtraFields.HefPostEcip1097(_, _) => HeaderExtraFields.HefPostEcip1097(treasuryOptOut = false, None)
   }
 
@@ -64,12 +64,10 @@ object BlockHelpers extends SecureRandomBuilder {
     Block(header, BlockBody(List(stx.tx), List(ommer)))
   }
 
-  def updateHeader(block: Block, updater: BlockHeader => BlockHeader): Block = {
+  def updateHeader(block: Block, updater: BlockHeader => BlockHeader): Block =
     block.copy(header = updater(block.header))
-  }
 
-  def withTransactions(block: Block, transactions: List[SignedTransaction]): Block = {
+  def withTransactions(block: Block, transactions: List[SignedTransaction]): Block =
     block.copy(body = block.body.copy(transactionList = transactions))
-  }
 
 }

@@ -2,13 +2,13 @@ package io.iohk.ethereum.network.discovery.codecs
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.flatspec.AnyFlatSpec
-import io.iohk.scalanet.discovery.ethereum.{Node, EthereumNodeRecord}
+import io.iohk.scalanet.discovery.ethereum.{EthereumNodeRecord, Node}
 import io.iohk.scalanet.discovery.ethereum.v4.Payload.ENRResponse
-import io.iohk.scalanet.discovery.crypto.{SigAlg, PrivateKey, PublicKey}
+import io.iohk.scalanet.discovery.crypto.{PrivateKey, PublicKey, SigAlg}
 import io.iohk.scalanet.discovery.hash.{Hash, Keccak256}
 import io.iohk.ethereum.network.discovery.Secp256k1SigAlg
 import io.iohk.ethereum.rlp
-import io.iohk.ethereum.rlp.{RLPList, RLPEncoder, RLPValue}
+import io.iohk.ethereum.rlp.{RLPEncoder, RLPList, RLPValue}
 import io.iohk.ethereum.rlp.RLPImplicits._
 import io.iohk.ethereum.rlp.RLPImplicitConversions._
 import scodec.bits.{ByteVector, HexStringSyntax}
@@ -25,7 +25,7 @@ class ENRCodecsSpec extends AnyFlatSpec with Matchers {
 
   val localhost = InetAddress.getByName("127.0.0.1")
 
-  behavior of "RLPCodecs with ENR"
+  behavior.of("RLPCodecs with ENR")
 
   // https://github.com/ethereum/devp2p/blob/master/enr.md#test-vectors
   val nodeId = Hash(hex"a448f24c6d18e575453db13171562b71999873db5b286df957af199ec94617f7".toBitVector)
@@ -72,7 +72,7 @@ class ENRCodecsSpec extends AnyFlatSpec with Matchers {
           // .toString hack used because RLPValue has mutable arrays in it where equality doesn't work.
           val encoded = a.map(_.toString).toList
           val expected = b.map(_.toString).toList
-          encoded should contain theSameElementsInOrderAs expected
+          (encoded should contain).theSameElementsInOrderAs(expected)
         }
 
         // Ignoring the signature, taking items up to where "tcp" would be.

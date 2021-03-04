@@ -15,7 +15,7 @@ trait PeerListSupportNg { self: Actor with ActorLogging =>
   import PeerListSupportNg._
   import Blacklist._
 
-  private implicit val ec: ExecutionContext = context.dispatcher
+  implicit private val ec: ExecutionContext = context.dispatcher
 
   def etcPeerManager: ActorRef
   def peerEventBus: ActorRef
@@ -34,7 +34,7 @@ trait PeerListSupportNg { self: Actor with ActorLogging =>
 
   def handlePeerListMessages: Receive = {
     case EtcPeerManagerActor.HandshakedPeers(peers) => updatePeers(peers)
-    case PeerDisconnected(peerId) => removePeerById(peerId)
+    case PeerDisconnected(peerId)                   => removePeerById(peerId)
   }
 
   def peersToDownloadFrom: Map[PeerId, PeerWithInfo] =
@@ -57,13 +57,12 @@ trait PeerListSupportNg { self: Actor with ActorLogging =>
     handshakedPeers = updated
   }
 
-  private def removePeerById(peerId: PeerId): Unit = {
+  private def removePeerById(peerId: PeerId): Unit =
     if (handshakedPeers.keySet.contains(peerId)) {
       peerEventBus ! Unsubscribe(PeerDisconnectedClassifier(PeerSelector.WithId(peerId)))
       blacklist.remove(peerId)
       handshakedPeers = handshakedPeers - peerId
     }
-  }
 
 }
 

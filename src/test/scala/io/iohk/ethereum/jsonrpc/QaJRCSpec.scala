@@ -11,7 +11,7 @@ import io.iohk.ethereum.jsonrpc.QAService.MineBlocksResponse.MinerResponseType._
 import io.iohk.ethereum.jsonrpc.QAService._
 import io.iohk.ethereum.nodebuilder.{ApisBuilder, BlockchainConfigBuilder}
 import io.iohk.ethereum.utils.{ByteStringUtils, Config}
-import io.iohk.ethereum.{ByteGenerators, NormalPatience, crypto}
+import io.iohk.ethereum.{crypto, ByteGenerators, NormalPatience}
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import org.json4s.Extraction
@@ -336,11 +336,10 @@ class QaJRCSpec
     def responseType(expectedType: MineBlocksResponse.MinerResponseType): JField =
       "responseType" -> JString(expectedType.entryName)
 
-    def mockSuccessfulMineBlocksBehaviour(resp: MinerResponse) = {
+    def mockSuccessfulMineBlocksBehaviour(resp: MinerResponse) =
       (qaService.mineBlocks _)
         .expects(mineBlocksReq)
         .returning(Task.now(Right(MineBlocksResponse(resp))))
-    }
 
     val fakeChainId: Byte = 42.toByte
   }

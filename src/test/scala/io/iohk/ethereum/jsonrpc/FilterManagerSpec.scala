@@ -12,7 +12,7 @@ import akka.pattern.ask
 import com.miguno.akka.testing.VirtualTime
 import io.iohk.ethereum.consensus.blocks.{BlockGenerator, PendingBlock}
 import io.iohk.ethereum.{NormalPatience, Timeouts, WithActorSystemShutDown}
-import io.iohk.ethereum.crypto.{ECDSASignature, generateKeyPair}
+import io.iohk.ethereum.crypto.{generateKeyPair, ECDSASignature}
 import io.iohk.ethereum.jsonrpc.FilterManager.LogFilterLogs
 import io.iohk.ethereum.security.SecureRandomBuilder
 import io.iohk.ethereum.ledger.BloomFilter

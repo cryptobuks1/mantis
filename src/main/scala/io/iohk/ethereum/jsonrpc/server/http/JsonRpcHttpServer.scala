@@ -22,7 +22,7 @@ import javax.net.ssl.SSLContext
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import org.json4s.native.Serialization
-import org.json4s.{DefaultFormats, JInt, native}
+import org.json4s.{native, DefaultFormats, JInt}
 import scala.concurrent.duration.{FiniteDuration, _}
 
 trait JsonRpcHttpServer extends Json4sSupport with Logger {
@@ -85,11 +85,10 @@ trait JsonRpcHttpServer extends Json4sSupport with Logger {
     }
   }
 
-  def handleRequest(request: JsonRpcRequest): StandardRoute = {
+  def handleRequest(request: JsonRpcRequest): StandardRoute =
     complete(handleResponse(jsonRpcController.handleRequest(request)).runToFuture)
-  }
 
-  private def handleResponse(f: Task[JsonRpcResponse]): Task[(StatusCode, JsonRpcResponse)] = f map { jsonRpcResponse =>
+  private def handleResponse(f: Task[JsonRpcResponse]): Task[(StatusCode, JsonRpcResponse)] = f.map { jsonRpcResponse =>
     jsonRpcResponse.error match {
       case Some(JsonRpcError(error, _, _)) if jsonRpcErrorCodes.contains(error) =>
         (StatusCodes.BadRequest, jsonRpcResponse)
@@ -97,8 +96,7 @@ trait JsonRpcHttpServer extends Json4sSupport with Logger {
     }
   }
 
-  /**
-    * Try to start JSON RPC server
+  /** Try to start JSON RPC server
     */
   def run(): Unit
 

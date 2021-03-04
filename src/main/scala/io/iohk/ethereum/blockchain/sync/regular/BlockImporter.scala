@@ -9,7 +9,7 @@ import io.iohk.ethereum.blockchain.sync.regular.BlockBroadcast.BlockToBroadcast
 import io.iohk.ethereum.blockchain.sync.regular.BlockBroadcasterActor.BroadcastBlocks
 import io.iohk.ethereum.blockchain.sync.regular.RegularSync.ProgressProtocol
 import io.iohk.ethereum.consensus.blocks.CheckpointBlockGenerator
-import io.iohk.ethereum.crypto.{ECDSASignature, kec256}
+import io.iohk.ethereum.crypto.{kec256, ECDSASignature}
 import io.iohk.ethereum.domain._
 import io.iohk.ethereum.ledger._
 import io.iohk.ethereum.mpt.MerklePatriciaTrie.MissingNodeException
@@ -56,11 +56,11 @@ class BlockImporter(
   }
 
   private def handleTopMessages(state: ImporterState, currentBehavior: Behavior): Receive = {
-    case OnTop => context become currentBehavior(state.onTop())
-    case NotOnTop => context become currentBehavior(state.notOnTop())
+    case OnTop    => context.become(currentBehavior(state.onTop()))
+    case NotOnTop => context.become(currentBehavior(state.notOnTop()))
   }
 
-  private def running(state: ImporterState): Receive = handleTopMessages(state, running) orElse {
+  private def running(state: ImporterState): Receive = handleTopMessages(state, running).orElse {
     case ReceiveTimeout => self ! PickBlocks
 
     case PrintStatus => log.info("Block: {}, is on top?: {}", blockchain.getBestBlockNumber(), state.isOnTop)
@@ -101,7 +101,7 @@ class BlockImporter(
         self ! PickBlocks
       }
 
-      context become behavior(newState)
+      context.become(behavior(newState))
     case PickBlocks if !state.importing => pickBlocks(state)
   }
 
@@ -120,7 +120,7 @@ class BlockImporter(
     log.debug("Starting Regular Sync, current best block is {}", startingBlockNumber)
     fetcher ! BlockFetcher.Start(self, startingBlockNumber)
     supervisor ! ProgressProtocol.StartingFrom(startingBlockNumber)
-    context become running(ImporterState.initial)
+    context.become(running(ImporterState.initial))
   }
 
   private def pickBlocks(state: ImporterState): Unit = {
@@ -133,20 +133,18 @@ class BlockImporter(
   }
 
   private def importBlocks(blocks: NonEmptyList[Block], blockImportType: BlockImportType): ImportFn = importWith(
-    {
-      Task(
-        log.debug(
-          "Attempting to import blocks starting from {} and ending with {}",
-          blocks.head.number,
-          blocks.last.number
-        )
+    Task(
+      log.debug(
+        "Attempting to import blocks starting from {} and ending with {}",
+        blocks.head.number,
+        blocks.last.number
       )
-        .flatMap(_ => Task.now(resolveBranch(blocks)))
-        .flatMap {
-          case Right(blocksToImport) => handleBlocksImport(blocksToImport)
-          case Left(resolvingFrom) => Task.now(ResolvingBranch(resolvingFrom))
-        }
-    },
+    )
+      .flatMap(_ => Task.now(resolveBranch(blocks)))
+      .flatMap {
+        case Right(blocksToImport) => handleBlocksImport(blocksToImport)
+        case Left(resolvingFrom)   => Task.now(ResolvingBranch(resolvingFrom))
+      },
     blockImportType
   )
 
@@ -185,7 +183,7 @@ class BlockImporter(
     if (blocks.isEmpty) {
       importedBlocks.headOption match {
         case Some(block) => supervisor ! ProgressProtocol.ImportedBlock(block.number, internally = false)
-        case None => ()
+        case None        => ()
       }
 
       Task.now((importedBlocks, None))
@@ -249,39 +247,37 @@ class BlockImporter(
   ): ImportFn = {
     def doLog(entry: ImportMessages.LogEntry): Unit = log.log(entry._1, entry._2)
     importWith(
-      {
-        Task(doLog(importMessages.preImport()))
-          .flatMap(_ => ledger.importBlock(block))
-          .tap(importMessages.messageForImportResult _ andThen doLog)
-          .tap {
-            case BlockImportedToTop(importedBlocksData) =>
-              val (blocks, weights) = importedBlocksData.map(data => (data.block, data.weight)).unzip
-              broadcastBlocks(blocks, weights)
-              updateTxPool(importedBlocksData.map(_.block), Seq.empty)
-              supervisor ! ProgressProtocol.ImportedBlock(block.number, internally)
-            case BlockEnqueued => ()
-            case DuplicateBlock => ()
-            case UnknownParent => () // This is normal when receiving broadcast blocks
-            case ChainReorganised(oldBranch, newBranch, weights) =>
-              updateTxPool(newBranch, oldBranch)
-              broadcastBlocks(newBranch, weights)
-              newBranch.lastOption match {
-                case Some(newBlock) => supervisor ! ProgressProtocol.ImportedBlock(newBlock.number, internally)
-                case None => ()
-              }
-            case BlockImportFailed(error) =>
-              if (informFetcherOnFail) {
-                fetcher ! BlockFetcher.BlockImportFailed(block.number, error)
-              }
-          }
-          .map(_ => Running)
-          .recover {
-            case missingNodeEx: MissingNodeException if syncConfig.redownloadMissingStateNodes =>
-              // state node re-download will be handled when downloading headers
-              doLog(importMessages.missingStateNode(missingNodeEx))
-              Running
-          }
-      },
+      Task(doLog(importMessages.preImport()))
+        .flatMap(_ => ledger.importBlock(block))
+        .tap((importMessages.messageForImportResult _).andThen(doLog))
+        .tap {
+          case BlockImportedToTop(importedBlocksData) =>
+            val (blocks, weights) = importedBlocksData.map(data => (data.block, data.weight)).unzip
+            broadcastBlocks(blocks, weights)
+            updateTxPool(importedBlocksData.map(_.block), Seq.empty)
+            supervisor ! ProgressProtocol.ImportedBlock(block.number, internally)
+          case BlockEnqueued  => ()
+          case DuplicateBlock => ()
+          case UnknownParent  => () // This is normal when receiving broadcast blocks
+          case ChainReorganised(oldBranch, newBranch, weights) =>
+            updateTxPool(newBranch, oldBranch)
+            broadcastBlocks(newBranch, weights)
+            newBranch.lastOption match {
+              case Some(newBlock) => supervisor ! ProgressProtocol.ImportedBlock(newBlock.number, internally)
+              case None           => ()
+            }
+          case BlockImportFailed(error) =>
+            if (informFetcherOnFail) {
+              fetcher ! BlockFetcher.BlockImportFailed(block.number, error)
+            }
+        }
+        .map(_ => Running)
+        .recover {
+          case missingNodeEx: MissingNodeException if syncConfig.redownloadMissingStateNodes =>
+            // state node re-download will be handled when downloading headers
+            doLog(importMessages.missingStateNode(missingNodeEx))
+            Running
+        },
       blockImportType
     )
   }
@@ -301,7 +297,7 @@ class BlockImporter(
   private def importWith(importTask: Task[NewBehavior], blockImportType: BlockImportType)(
       state: ImporterState
   ): Unit = {
-    context become running(state.importingBlocks())
+    context.become(running(state.importingBlocks()))
 
     importTask
       .map(self ! ImportDone(_, blockImportType))
@@ -345,9 +341,9 @@ class BlockImporter(
   private def startingBlockNumber: BigInt = blockchain.getBestBlockNumber()
 
   private def getBehavior(newBehavior: NewBehavior, blockImportType: BlockImportType): Behavior = newBehavior match {
-    case Running => running
+    case Running                             => running
     case ResolvingMissingNode(blocksToRetry) => resolvingMissingNode(blocksToRetry, blockImportType)
-    case ResolvingBranch(from) => resolvingBranch(from)
+    case ResolvingBranch(from)               => resolvingBranch(from)
   }
 }
 

@@ -7,8 +7,7 @@ import akka.dispatch._
 import akka.event.Logging
 import com.typesafe.config.Config
 
-/**
-  * Logs the mailbox size when exceeding the configured limit. It logs at most once per second
+/** Logs the mailbox size when exceeding the configured limit. It logs at most once per second
   * when the messages are enqueued or dequeued.
   *
   * Configuration:
@@ -70,7 +69,6 @@ class LoggingMailbox(owner: ActorRef, system: ActorSystem, sizeLimit: Int) exten
 
   override def numberOfMessages: Int = queueSize.get
 
-  override def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = {
+  override def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit =
     super.cleanUp(owner, deadLetters)
-  }
 }

@@ -8,8 +8,7 @@ import io.iohk.ethereum.domain.BlockBody
 import io.iohk.ethereum.utils.ByteUtils.{byteSequenceToBuffer, compactPickledBytes}
 import io.iohk.ethereum.utils.Picklers._
 
-/**
-  * This class is used to store the BlockBody, by using:
+/** This class is used to store the BlockBody, by using:
   *   Key: hash of the block to which the BlockBody belong
   *   Value: the block body
   */
@@ -26,7 +25,7 @@ class BlockBodiesStorage(val dataSource: DataSource) extends TransactionalKeyVal
     compactPickledBytes(Pickle.intoBytes(blockBody))
 
   override def valueDeserializer: IndexedSeq[Byte] => BlockBody =
-    byteSequenceToBuffer _ andThen Unpickle[BlockBody].fromBytes
+    (byteSequenceToBuffer _).andThen(Unpickle[BlockBody].fromBytes)
 }
 
 object BlockBodiesStorage {

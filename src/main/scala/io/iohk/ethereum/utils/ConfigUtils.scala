@@ -9,17 +9,16 @@ import scala.util.Try
 
 object ConfigUtils {
 
-  def parseCorsAllowedOrigins(config: TypesafeConfig, key: String): HttpOriginMatcher = {
-    (Try(parseMultipleOrigins(config.getStringList(key).asScala.toSeq)) recoverWith { case _ =>
+  def parseCorsAllowedOrigins(config: TypesafeConfig, key: String): HttpOriginMatcher =
+    (Try(parseMultipleOrigins(config.getStringList(key).asScala.toSeq)).recoverWith { case _ =>
       Try(parseSingleOrigin(config.getString(key)))
     }).get
-  }
 
   def parseMultipleOrigins(origins: Seq[String]): HttpOriginMatcher = HttpOriginMatcher(origins.map(HttpOrigin(_)): _*)
 
   def parseSingleOrigin(origin: String): HttpOriginMatcher = origin match {
     case "*" => HttpOriginMatcher.*
-    case s => HttpOriginMatcher.Default(HttpOrigin(s) :: Nil)
+    case s   => HttpOriginMatcher.Default(HttpOrigin(s) :: Nil)
   }
 
   def getOptionalValue[V](config: TypesafeConfig, getter: TypesafeConfig => String => V, path: String): Option[V] =

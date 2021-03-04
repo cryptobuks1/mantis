@@ -49,7 +49,7 @@ class EtcPeerManagerFake(
       (header, peer)
     }
     .bufferTumbling(peers.size)
-    .concatMap(headersFromPeers => {
+    .concatMap { headersFromPeers =>
       val (headers, respondedPeers) = headersFromPeers.unzip
 
       if (headers.distinct.size == 1 && respondedPeers.toSet == peers.keySet.map(_.id)) {
@@ -57,7 +57,7 @@ class EtcPeerManagerFake(
       } else {
         Observable.empty
       }
-    })
+    }
 
   val fetchedHeaders = responses
     .collect {
@@ -71,7 +71,7 @@ class EtcPeerManagerFake(
     Function.unlift(msg =>
       msg.message.underlyingMsg match {
         case GetReceipts(hashes) => Some(hashes)
-        case _ => None
+        case _                   => None
       }
     )
   )

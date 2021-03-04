@@ -61,8 +61,8 @@ class FastSync(
 
   override def receive: Receive = idle
 
-  def idle: Receive = handlePeerListMessages orElse {
-    case SyncProtocol.Start => start()
+  def idle: Receive = handlePeerListMessages.orElse {
+    case SyncProtocol.Start     => start()
     case SyncProtocol.GetStatus => sender() ! SyncProtocol.Status.NotSyncing
   }
 
@@ -70,7 +70,7 @@ class FastSync(
     log.info("Trying to start block synchronization (fast mode)")
     fastSyncStateStorage.getSyncState() match {
       case Some(syncState) => startWithState(syncState)
-      case None => startFromScratch()
+      case None            => startFromScratch()
     }
   }
 
@@ -87,16 +87,16 @@ class FastSync(
       "pivot-block-selector"
     )
     pivotBlockSelector ! PivotBlockSelector.SelectPivotBlock
-    context become waitingForPivotBlock
+    context.become(waitingForPivotBlock)
   }
 
-  def waitingForPivotBlock: Receive = handlePeerListMessages orElse {
+  def waitingForPivotBlock: Receive = handlePeerListMessages.orElse {
     case SyncProtocol.GetStatus => sender() ! SyncProtocol.Status.NotSyncing
     case PivotBlockSelector.Result(pivotBlockHeader) =>
       if (pivotBlockHeader.number < 1) {
         log.info("Unable to start block synchronization in fast mode: pivot block is less than 1")
         appStateStorage.fastSyncDone().commit()
-        context become idle
+        context.become(idle)
         syncController ! Done
       } else {
         val initialSyncState =
@@ -161,13 +161,13 @@ class FastSync(
         syncState = syncState.copy(downloadedNodesCount = saved, totalNodesCount = saved + missing)
     }
 
-    def receive: Receive = handlePeerListMessages orElse handleStatus orElse {
+    def receive: Receive = handlePeerListMessages.orElse(handleStatus).orElse {
       case UpdatePivotBlock(reason) => updatePivotBlock(reason)
       case WaitingForNewTargetBlock =>
         log.info("State sync stopped until receiving new pivot block")
         updatePivotBlock(ImportedLastBlock)
-      case ProcessSyncing => processSyncing()
-      case PrintStatus => printStatus()
+      case ProcessSyncing   => processSyncing()
+      case PrintStatus      => printStatus()
       case PersistSyncState => persistSyncState()
       case StateSyncFinished =>
         syncState = syncState.copy(stateSyncFinished = true)
@@ -216,13 +216,12 @@ class FastSync(
     def askForPivotBlockUpdate(updateReason: PivotBlockUpdateReason): Unit = {
       syncState = syncState.copy(updatingPivotBlock = true)
       log.info("Asking for new pivot block")
-      val pivotBlockSelector = {
+      val pivotBlockSelector =
         context.actorOf(
           PivotBlockSelector.props(etcPeerManager, peerEventBus, syncConfig, scheduler, context.self)
         )
-      }
       pivotBlockSelector ! PivotBlockSelector.SelectPivotBlock
-      context become waitingForPivotBlockUpdate(updateReason)
+      context.become(waitingForPivotBlockUpdate(updateReason))
     }
 
     def reScheduleAskForNewPivot(updateReason: PivotBlockUpdateReason): Unit = {
@@ -235,25 +234,23 @@ class FastSync(
         newPivot: BlockHeader,
         currentState: SyncState,
         updateReason: PivotBlockUpdateReason
-    ): Boolean = {
+    ): Boolean =
       newPivot.number == currentState.pivotBlock.number && updateReason.isSyncRestart
-    }
 
     private def newPivotIsGoodEnough(
         newPivot: BlockHeader,
         currentState: SyncState,
         updateReason: PivotBlockUpdateReason
-    ): Boolean = {
+    ): Boolean =
       newPivot.number >= currentState.pivotBlock.number && !stalePivotAfterRestart(newPivot, currentState, updateReason)
-    }
 
     def waitingForPivotBlockUpdate(updateReason: PivotBlockUpdateReason): Receive =
-      handlePeerListMessages orElse handleStatus orElse {
+      handlePeerListMessages.orElse(handleStatus).orElse {
         case PivotBlockSelector.Result(pivotBlockHeader)
             if newPivotIsGoodEnough(pivotBlockHeader, syncState, updateReason) =>
           log.info("New pivot block with number {} received", pivotBlockHeader.number)
           updatePivotSyncState(updateReason, pivotBlockHeader)
-          context become this.receive
+          context.become(this.receive)
           processSyncing()
 
         case PivotBlockSelector.Result(pivotBlockHeader)
@@ -275,7 +272,7 @@ class FastSync(
         ) //There's always at least one state root to fetch
       )
 
-    private def updatePivotBlock(updateReason: PivotBlockUpdateReason): Unit = {
+    private def updatePivotBlock(updateReason: PivotBlockUpdateReason): Unit =
       if (syncState.pivotBlockUpdateFailures <= syncConfig.maximumTargetUpdateFailures) {
         if (assignedHandlers.nonEmpty || syncState.blockChainWorkQueued) {
           log.info("Still waiting for some responses, rescheduling pivot block update")
@@ -288,7 +285,6 @@ class FastSync(
         log.warning("Sync failure! Number of pivot block update failures reached maximum.")
         sys.exit(1)
       }
-    }
 
     private def updatePivotSyncState(updateReason: PivotBlockUpdateReason, pivotBlockHeader: BlockHeader): Unit =
       updateReason match {
@@ -341,22 +337,22 @@ class FastSync(
       }
 
     private def removeRequestHandler(handler: ActorRef): Unit = {
-      context unwatch handler
+      context.unwatch(handler)
       assignedHandlers -= handler
     }
 
     private def discardLastBlocks(startBlock: BigInt, blocksToDiscard: Int): Unit = {
-      (startBlock to ((startBlock - blocksToDiscard) max 1) by -1).foreach { n =>
+      (startBlock to ((startBlock - blocksToDiscard).max(1)) by -1).foreach { n =>
         blockchain.getBlockHeaderByNumber(n).foreach { headerToRemove =>
           blockchain.removeBlock(headerToRemove.hash, withState = false)
         }
       }
       // TODO (maybe ETCM-77): Manage last checkpoint number too
-      appStateStorage.putBestBlockNumber((startBlock - blocksToDiscard - 1) max 0).commit()
+      appStateStorage.putBestBlockNumber((startBlock - blocksToDiscard - 1).max(0)).commit()
     }
 
     @tailrec
-    private def processHeaders(peer: Peer, headers: Seq[BlockHeader]): HeaderProcessingResult = {
+    private def processHeaders(peer: Peer, headers: Seq[BlockHeader]): HeaderProcessingResult =
       if (headers.nonEmpty) {
         val header = headers.head
         processHeader(header, peer) match {
@@ -371,7 +367,6 @@ class FastSync(
         }
       } else
         HeadersProcessingFinished
-    }
 
     private def validateHeader(header: BlockHeader, peer: Peer): Either[HeaderProcessingResult, BlockHeader] = {
       val shouldValidate = header.number >= syncState.nextBlockToFullyValidate
@@ -420,9 +415,8 @@ class FastSync(
         parentWeight <- getParentChainWeight(header)
       } yield (validatedHeader, parentWeight)
 
-    private def getParentChainWeight(header: BlockHeader) = {
+    private def getParentChainWeight(header: BlockHeader) =
       blockchain.getChainWeightByHash(header.parentHash).toRight(ParentChainWeightNotFound(header))
-    }
 
     private def handleRewind(header: BlockHeader, peer: Peer, N: Int, duration: FiniteDuration): Unit = {
       blacklist.add(peer.id, duration, BlockHeaderValidationFailed)
@@ -439,7 +433,7 @@ class FastSync(
       }
     }
 
-    private def handleBlockHeaders(peer: Peer, headers: Seq[BlockHeader]): Unit = {
+    private def handleBlockHeaders(peer: Peer, headers: Seq[BlockHeader]): Unit =
       if (checkHeadersChain(headers)) {
         processHeaders(peer, headers) match {
           case ParentChainWeightNotFound(header) =>
@@ -466,7 +460,6 @@ class FastSync(
         blacklist.add(peer.id, blacklistDuration, ErrorInBlockHeaders)
         processSyncing()
       }
-    }
 
     private def handleBlockBodies(peer: Peer, requestedHashes: Seq[ByteString], blockBodies: Seq[BlockBody]): Unit = {
       if (blockBodies.isEmpty) {
@@ -540,8 +533,7 @@ class FastSync(
       }
     }
 
-    /**
-      * Restarts download from a few blocks behind the current best block header, as an unexpected DB error happened
+    /** Restarts download from a few blocks behind the current best block header, as an unexpected DB error happened
       */
     private def redownloadBlockchain(): Unit = {
       syncState = syncState.copy(
@@ -553,12 +545,11 @@ class FastSync(
       log.debug("Missing block header for known hash")
     }
 
-    private def persistSyncState(): Unit = {
+    private def persistSyncState(): Unit =
       syncStateStorageActor ! syncState.copy(
         blockBodiesQueue = requestedBlockBodies.values.flatten.toSeq.distinct ++ syncState.blockBodiesQueue,
         receiptsQueue = requestedReceipts.values.flatten.toSeq.distinct ++ syncState.receiptsQueue
       )
-    }
 
     private def printStatus(): Unit = {
       def formatPeerEntry(entry: PeerWithInfo): String = formatPeer(entry.peer)
@@ -584,7 +575,8 @@ class FastSync(
     }
 
     private def insertBlocks(requestedHashes: Seq[ByteString], blockBodies: Seq[BlockBody]): Unit = {
-      (requestedHashes zip blockBodies)
+      (requestedHashes
+        .zip(blockBodies))
         .map { case (hash, body) =>
           blockchain.storeBlockBody(hash, body)
         }
@@ -599,20 +591,18 @@ class FastSync(
       }
     }
 
-    def hasBestBlockFreshEnoughToUpdatePivotBlock(info: PeerInfo, state: SyncState, syncConfig: SyncConfig): Boolean = {
+    def hasBestBlockFreshEnoughToUpdatePivotBlock(info: PeerInfo, state: SyncState, syncConfig: SyncConfig): Boolean =
       (info.maxBlockNumber - syncConfig.pivotBlockOffset) - state.pivotBlock.number >= syncConfig.maxPivotBlockAge
-    }
 
     private def getPeersWithFreshEnoughPivot(
         peers: NonEmptyList[PeerWithInfo],
         state: SyncState,
         syncConfig: SyncConfig
-    ): List[(Peer, BigInt)] = {
+    ): List[(Peer, BigInt)] =
       peers.collect {
         case PeerWithInfo(peer, info) if hasBestBlockFreshEnoughToUpdatePivotBlock(info, state, syncConfig) =>
           (peer, info.maxBlockNumber)
       }
-    }
 
     def noBlockchainWorkRemaining: Boolean =
       syncState.isBlockchainWorkFinished && assignedHandlers.isEmpty
@@ -684,7 +674,7 @@ class FastSync(
       discardLastBlocks(syncState.safeDownloadTarget, syncConfig.fastSyncBlockValidationX - 1)
       cleanup()
       appStateStorage.fastSyncDone().commit()
-      context become idle
+      context.become(idle)
       peerRequestsTime = Map.empty
       syncController ! Done
     }
@@ -697,7 +687,7 @@ class FastSync(
       fastSyncStateStorage.purge()
     }
 
-    def processDownloads(): Unit = {
+    def processDownloads(): Unit =
       if (unassignedPeers.isEmpty) {
         if (assignedHandlers.nonEmpty) {
           log.debug("There are no available peers, waiting for responses")
@@ -713,7 +703,6 @@ class FastSync(
           .sortBy(_.peerInfo.maxBlockNumber)(Ordering[BigInt].reverse)
           .foreach(assignBlockchainWork)
       }
-    }
 
     def assignBlockchainWork(peerWithInfo: PeerWithInfo): Unit = {
       val PeerWithInfo(peer, peerInfo) = peerWithInfo
@@ -745,7 +734,7 @@ class FastSync(
         )
       )
 
-      context watch handler
+      context.watch(handler)
       assignedHandlers += (handler -> peer)
       peerRequestsTime += (peer -> Instant.now())
       syncState = syncState.copy(receiptsQueue = remainingReceipts)
@@ -766,7 +755,7 @@ class FastSync(
         )
       )
 
-      context watch handler
+      context.watch(handler)
       assignedHandlers += (handler -> peer)
       peerRequestsTime += (peer -> Instant.now())
       syncState = syncState.copy(blockBodiesQueue = remainingBlockBodies)
@@ -792,7 +781,7 @@ class FastSync(
         BlockHeadersHandlerName
       )
 
-      context watch handler
+      context.watch(handler)
       assignedHandlers += (handler -> peer)
       requestedHeaders += (peer -> limit)
       peerRequestsTime += (peer -> Instant.now())
@@ -806,9 +795,8 @@ class FastSync(
     def blockchainDataToDownload: Boolean =
       syncState.blockChainWorkQueued || syncState.bestBlockHeaderNumber < syncState.safeDownloadTarget
 
-    def fullySynced: Boolean = {
+    def fullySynced: Boolean =
       syncState.isBlockchainWorkFinished && assignedHandlers.isEmpty && syncState.stateSyncFinished
-    }
 
     private def updateBestBlockIfNeeded(receivedHashes: Seq[ByteString]): Unit = {
       val fullBlocks = receivedHashes.flatMap { hash =>
@@ -902,8 +890,8 @@ object FastSync {
     def updateDiscardedBlocks(header: BlockHeader, N: Int): SyncState = copy(
       blockBodiesQueue = Seq.empty,
       receiptsQueue = Seq.empty,
-      bestBlockHeaderNumber = (header.number - N - 1) max 0,
-      nextBlockToFullyValidate = (header.number - N) max 1
+      bestBlockHeaderNumber = (header.number - N - 1).max(0),
+      nextBlockToFullyValidate = (header.number - N).max(1)
     )
 
     def updatePivotBlock(newPivot: BlockHeader, numberOfSafeBlocks: BigInt, updateFailures: Boolean): SyncState =
@@ -937,9 +925,9 @@ object FastSync {
 
   sealed abstract class PivotBlockUpdateReason {
     def isSyncRestart: Boolean = this match {
-      case ImportedLastBlock => false
+      case ImportedLastBlock         => false
       case LastBlockValidationFailed => false
-      case SyncRestart => true
+      case SyncRestart               => true
     }
   }
 

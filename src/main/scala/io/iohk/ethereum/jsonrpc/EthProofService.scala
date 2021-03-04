@@ -18,8 +18,7 @@ import monix.eval.Task
 
 object ProofService {
 
-  /**
-    * Request to eth get proof
+  /** Request to eth get proof
     *
     * @param address     the address of the account or contract
     * @param storageKeys array of storage keys;
@@ -46,15 +45,14 @@ object ProofService {
         case (None, Some(proof)) =>
           EmptyStorageValue(StorageProofKey(position), proof.map(asRlpSerializedNode))
         case (Some(value), None) => EmptyStorageProof(StorageProofKey(position), value)
-        case (None, None) => EmptyStorageValueProof(StorageProofKey(position))
+        case (None, None)        => EmptyStorageValueProof(StorageProofKey(position))
       }
 
     def asRlpSerializedNode(node: MptNode): ByteString =
       ByteString(MptTraversals.encodeNode(node))
   }
 
-  /**
-    * Object proving a relationship of a storage value to an account's storageHash
+  /** Object proving a relationship of a storage value to an account's storageHash
     *
     * @param key   storage proof key
     * @param value the value of the storage slot in its account tree
@@ -75,8 +73,7 @@ object ProofService {
   /** The key used to get the storage slot in its account tree */
   case class StorageProofKey(v: BigInt) extends AnyVal
 
-  /**
-    * The merkle proofs of the specified account connecting them to the blockhash of the block specified.
+  /** The merkle proofs of the specified account connecting them to the blockhash of the block specified.
     *
     * Proof of account consists of:
     * - account object: nonce, balance, storageHash, codeHash
@@ -129,14 +126,12 @@ object ProofService {
 
 trait ProofService {
 
-  /**
-    * Returns the account- and storage-values of the specified account including the Merkle-proof.
+  /** Returns the account- and storage-values of the specified account including the Merkle-proof.
     */
   def getProof(req: GetProofRequest): ServiceResponse[GetProofResponse]
 }
 
-/**
-  * Spec: [EIP-1186](https://eips.ethereum.org/EIPS/eip-1186)
+/** Spec: [EIP-1186](https://eips.ethereum.org/EIPS/eip-1186)
   * besu: https://github.com/PegaSysEng/pantheon/pull/1824/files
   * parity: https://github.com/openethereum/parity-ethereum/pull/9001
   * geth: https://github.com/ethereum/go-ethereum/pull/17737
@@ -144,13 +139,11 @@ trait ProofService {
 class EthProofService(blockchain: Blockchain, blockGenerator: BlockGenerator, ethCompatibleStorage: Boolean)
     extends ProofService {
 
-  def getProof(req: GetProofRequest): ServiceResponse[GetProofResponse] = {
+  def getProof(req: GetProofRequest): ServiceResponse[GetProofResponse] =
     getProofAccount(req.address, req.storageKeys, req.blockNumber)
       .map(_.map(GetProofResponse.apply))
-  }
 
-  /**
-    * Get account and storage values for account including Merkle Proof.
+  /** Get account and storage values for account including Merkle Proof.
     *
     * @param address address of the account
     * @param storageKeys storage keys which should be proofed and included
@@ -179,7 +172,7 @@ class EthProofService(blockchain: Blockchain, blockGenerator: BlockGenerator, et
   def getStorageProof(
       account: Account,
       storageKeys: Seq[StorageProofKey]
-  ): Seq[StorageProof] = {
+  ): Seq[StorageProof] =
     storageKeys.toList
       .map { storageKey =>
         blockchain
@@ -189,7 +182,6 @@ class EthProofService(blockchain: Blockchain, blockGenerator: BlockGenerator, et
             ethCompatibleStorage = ethCompatibleStorage
           )
       }
-  }
 
   private def noAccount(address: Address, blockNumber: BigInt): JsonRpcError =
     JsonRpcError.LogicError(s"No account found for Address [${address.toString}] blockNumber [${blockNumber.toString}]")
@@ -201,16 +193,15 @@ class EthProofService(blockchain: Blockchain, blockGenerator: BlockGenerator, et
     ByteString(MptTraversals.encodeNode(node))
 
   private def resolveBlock(blockParam: BlockParam): Either[JsonRpcError, ResolvedBlock] = {
-    def getBlock(number: BigInt): Either[JsonRpcError, Block] = {
+    def getBlock(number: BigInt): Either[JsonRpcError, Block] =
       blockchain
         .getBlockByNumber(number)
         .toRight(JsonRpcError.InvalidParams(s"Block $number not found"))
-    }
 
     blockParam match {
       case BlockParam.WithNumber(blockNumber) => getBlock(blockNumber).map(ResolvedBlock(_, pendingState = None))
-      case BlockParam.Earliest => getBlock(0).map(ResolvedBlock(_, pendingState = None))
-      case BlockParam.Latest => getBlock(blockchain.getBestBlockNumber()).map(ResolvedBlock(_, pendingState = None))
+      case BlockParam.Earliest                => getBlock(0).map(ResolvedBlock(_, pendingState = None))
+      case BlockParam.Latest                  => getBlock(blockchain.getBestBlockNumber()).map(ResolvedBlock(_, pendingState = None))
       case BlockParam.Pending =>
         blockGenerator.getPendingBlockAndState
           .map(pb => ResolvedBlock(pb.pendingBlock.block, pendingState = Some(pb.worldState)))

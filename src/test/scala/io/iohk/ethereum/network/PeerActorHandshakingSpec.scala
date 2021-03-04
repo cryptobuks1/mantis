@@ -140,7 +140,7 @@ class PeerActorHandshakingSpec extends AnyFlatSpec with Matchers {
   }
 
   trait TestSetup extends EphemBlockchainTestSetup {
-    override implicit lazy val system = ActorSystem("PeerActorSpec_System")
+    implicit override lazy val system = ActorSystem("PeerActorSpec_System")
 
     val time = new VirtualTime
 
@@ -207,9 +207,8 @@ class PeerActorHandshakingSpec extends AnyFlatSpec with Matchers {
   }
 
   object MockHandshakerRequiresHello {
-    def apply(): MockHandshakerRequiresHello = {
+    def apply(): MockHandshakerRequiresHello =
       new MockHandshakerRequiresHello(MockHelloExchangeState)
-    }
   }
 
   case object MockHelloExchangeState extends InProgressState[PeerInfo] {
@@ -220,7 +219,7 @@ class PeerActorHandshakingSpec extends AnyFlatSpec with Matchers {
 
     def applyResponseMessage: PartialFunction[Message, HandshakerState[PeerInfo]] = {
       case helloMsg: Hello => ConnectedState(defaultPeerInfo)
-      case status: Status => DisconnectedState(defaultReasonDisconnect)
+      case status: Status  => DisconnectedState(defaultReasonDisconnect)
     }
 
     def processTimeout: HandshakerState[PeerInfo] = DisconnectedState(defaultReasonDisconnect)

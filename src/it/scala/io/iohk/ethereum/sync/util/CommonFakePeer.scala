@@ -73,7 +73,7 @@ abstract class CommonFakePeer(peerName: String, fakePeerCustomConfig: FakePeerCu
 
   lazy val tempDir = Files.createTempDirectory("temp-fast-sync")
 
-  def getRockDbTestConfig(dbPath: String) = {
+  def getRockDbTestConfig(dbPath: String) =
     new RocksDbConfig {
       override val createIfMissing: Boolean = true
       override val paranoidChecks: Boolean = false
@@ -85,7 +85,6 @@ abstract class CommonFakePeer(peerName: String, fakePeerCustomConfig: FakePeerCu
       override val blockSize: Long = 16384
       override val blockCacheSize: Long = 33554432
     }
-  }
 
   sealed trait LocalPruningConfigBuilder extends PruningConfigBuilder {
     override lazy val pruningMode: PruningMode = ArchivePruning
@@ -101,8 +100,7 @@ abstract class CommonFakePeer(peerName: String, fakePeerCustomConfig: FakePeerCu
   lazy val blockchainConfig = Config.blockchains.blockchainConfig
   lazy val discoveryConfig = DiscoveryConfig(Config.config, blockchainConfig.bootstrapNodes)
 
-  /**
-    * Default persist interval is 20s, which is too long for tests. As in all tests we treat peer as connected when
+  /** Default persist interval is 20s, which is too long for tests. As in all tests we treat peer as connected when
     * it is persisted in storage.
     */
   lazy val knownNodesManagerConfig =
@@ -231,7 +229,7 @@ abstract class CommonFakePeer(peerName: String, fakePeerCustomConfig: FakePeerCu
     BlockBroadcasterActor.props(broadcaster, peerEventBus, etcPeerManager, testSyncConfig, system.scheduler)
   )
 
-  private def getMptForBlock(block: Block) = {
+  private def getMptForBlock(block: Block) =
     bl.getWorldStateProxy(
       blockNumber = block.number,
       accountStartNonce = blockchainConfig.accountStartNonce,
@@ -239,11 +237,9 @@ abstract class CommonFakePeer(peerName: String, fakePeerCustomConfig: FakePeerCu
       noEmptyAccounts = EvmConfig.forBlock(block.number, blockchainConfig).noEmptyAccounts,
       ethCompatibleStorage = blockchainConfig.ethCompatibleStorage
     )
-  }
 
-  private def broadcastBlock(block: Block, weight: ChainWeight) = {
+  private def broadcastBlock(block: Block, weight: ChainWeight) =
     broadcasterActor ! BroadcastBlock(BlockToBroadcast(block, weight))
-  }
 
   def getCurrentState(): BlockchainState = {
     val bestBlock = bl.getBestBlock().get
@@ -252,7 +248,7 @@ abstract class CommonFakePeer(peerName: String, fakePeerCustomConfig: FakePeerCu
     BlockchainState(bestBlock, currentWorldState, currentWeight)
   }
 
-  def startPeer(): Task[Unit] = {
+  def startPeer(): Task[Unit] =
     for {
       _ <- Task {
         peerManager ! PeerManagerActor.StartConnecting
@@ -262,16 +258,14 @@ abstract class CommonFakePeer(peerName: String, fakePeerCustomConfig: FakePeerCu
         status.serverStatus == Listening(listenAddress)
       }
     } yield ()
-  }
 
-  def shutdown(): Task[Unit] = {
+  def shutdown(): Task[Unit] =
     for {
       _ <- Task.deferFuture(system.terminate())
       _ <- Task(storagesInstance.dataSource.destroy())
     } yield ()
-  }
 
-  def connectToPeers(nodes: Set[Node]): Task[Unit] = {
+  def connectToPeers(nodes: Set[Node]): Task[Unit] =
     for {
       _ <- Task {
         peerManager ! DiscoveredNodesInfo(nodes)
@@ -283,7 +277,6 @@ abstract class CommonFakePeer(peerName: String, fakePeerCustomConfig: FakePeerCu
           requestedNodes.subsetOf(currentNodes)
       }
     } yield ()
-  }
 
   private def createChildBlock(parent: Block, parentWeight: ChainWeight, parentWorld: InMemoryWorldStateProxy)(
       updateWorldForBlock: (BigInt, InMemoryWorldStateProxy) => InMemoryWorldStateProxy
@@ -299,7 +292,7 @@ abstract class CommonFakePeer(peerName: String, fakePeerCustomConfig: FakePeerCu
 
   def importBlocksUntil(
       n: BigInt
-  )(updateWorldForBlock: (BigInt, InMemoryWorldStateProxy) => InMemoryWorldStateProxy): Task[Unit] = {
+  )(updateWorldForBlock: (BigInt, InMemoryWorldStateProxy) => InMemoryWorldStateProxy): Task[Unit] =
     Task(bl.getBestBlock()).flatMap { block =>
       if (block.get.number >= n) {
         Task(())
@@ -313,6 +306,5 @@ abstract class CommonFakePeer(peerName: String, fakePeerCustomConfig: FakePeerCu
         }.flatMap(_ => importBlocksUntil(n)(updateWorldForBlock))
       }
     }
-  }
 
 }

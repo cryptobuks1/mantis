@@ -21,7 +21,7 @@ import io.iohk.ethereum.nodebuilder.ApisBuilder
 import io.iohk.ethereum.ommers.OmmersPool
 import io.iohk.ethereum.transactions.PendingTransactionsManager
 import io.iohk.ethereum.utils.{ByteStringUtils, Config}
-import io.iohk.ethereum.{NormalPatience, WithActorSystemShutDown, crypto}
+import io.iohk.ethereum.{crypto, NormalPatience, WithActorSystemShutDown}
 import monix.execution.Scheduler.Implicits.global
 import org.bouncycastle.util.encoders.Hex
 import org.scalamock.scalatest.MockFactory

@@ -18,8 +18,8 @@ import io.iohk.ethereum.jsonrpc.ProofService.{
   GetProofRequest,
   GetProofResponse,
   ProofAccount,
-  StorageValueProof,
-  StorageProofKey
+  StorageProofKey,
+  StorageValueProof
 }
 import io.iohk.ethereum.jsonrpc.serialization.JsonSerializers.{
   OptionNoneToJNullSerializer,
@@ -260,7 +260,7 @@ class JsonRpcControllerEthSpec
       .decompose(BlockResponse(uncle, None, pendingBlock = false))
       .removeField {
         case ("transactions", _) => true
-        case _ => false
+        case _                   => false
       }
 
     response should haveResult(expectedUncleBlockResponse)
@@ -291,7 +291,7 @@ class JsonRpcControllerEthSpec
       .decompose(BlockResponse(uncle, None, pendingBlock = false))
       .removeField {
         case ("transactions", _) => true
-        case _ => false
+        case _                   => false
       }
 
     response should haveResult(expectedUncleBlockResponse)

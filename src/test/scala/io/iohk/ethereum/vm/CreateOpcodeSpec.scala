@@ -184,7 +184,7 @@ class CreateOpcodeSpec extends AnyWordSpec with Matchers with ScalaCheckProperty
 
     val mem = Memory.empty.store(0, createCode)
     val stack = opcode match {
-      case CREATE => Stack.empty().push(Seq[UInt256](createCode.size, 0, value))
+      case CREATE  => Stack.empty().push(Seq[UInt256](createCode.size, 0, value))
       case CREATE2 => Stack.empty().push(Seq[UInt256](salt, createCode.size, 0, value))
     }
     val stateIn: PS = ProgramState(vm, context, env).withStack(stack).withMemory(mem)
@@ -196,12 +196,12 @@ class CreateOpcodeSpec extends AnyWordSpec with Matchers with ScalaCheckProperty
 
   def commonBehaviour(opcode: CreateOp): Unit = {
     def newAccountAddress(code: ByteString = fxt.createCode.code) = opcode match {
-      case CREATE => fxt.initWorld.increaseNonce(fxt.creatorAddr).createAddress(fxt.creatorAddr)
+      case CREATE  => fxt.initWorld.increaseNonce(fxt.creatorAddr).createAddress(fxt.creatorAddr)
       case CREATE2 => fxt.initWorld.create2Address(fxt.creatorAddr, fxt.salt, code)
     }
 
     val withHashCost = opcode match {
-      case CREATE => false
+      case CREATE  => false
       case CREATE2 => true
     }
 
@@ -480,7 +480,7 @@ class CreateOpcodeSpec extends AnyWordSpec with Matchers with ScalaCheckProperty
   }
 
   "CREATE" should {
-    behave like commonBehaviour(CREATE)
+    behave.like(commonBehaviour(CREATE))
 
     "account with non-zero balance, but empty code and zero nonce, already exists" should {
 
@@ -503,7 +503,7 @@ class CreateOpcodeSpec extends AnyWordSpec with Matchers with ScalaCheckProperty
   }
 
   "CREATE2" should {
-    behave like commonBehaviour(CREATE2)
+    behave.like(commonBehaviour(CREATE2))
 
     "returns correct address and spends correct amount of gas (examples from https://eips.ethereum.org/EIPS/eip-1014)" in {
 

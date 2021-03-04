@@ -92,21 +92,21 @@ class RegularSync(
 
     case ProgressProtocol.StartedFetching =>
       val newState = progressState.copy(startedFetching = true)
-      context become running(newState)
+      context.become(running(newState))
     case ProgressProtocol.StartingFrom(blockNumber) =>
       val newState = progressState.copy(initialBlock = blockNumber, currentBlock = blockNumber)
-      context become running(newState)
+      context.become(running(newState))
     case ProgressProtocol.GotNewBlock(blockNumber) =>
       log.info(s"Got information about new block [number = $blockNumber]")
       val newState = progressState.copy(bestKnownNetworkBlock = blockNumber)
-      context become running(newState)
+      context.become(running(newState))
     case ProgressProtocol.ImportedBlock(blockNumber, internally) =>
       log.info(s"Imported new block [number = $blockNumber, internally = $internally]")
       val newState = progressState.copy(currentBlock = blockNumber)
       if (internally) {
         fetcher ! InternalLastBlockImport(blockNumber)
       }
-      context become running(newState)
+      context.become(running(newState))
   }
 
   override def supervisorStrategy: SupervisorStrategy = AllForOneStrategy()(SupervisorStrategy.defaultDecider)
@@ -156,7 +156,7 @@ object RegularSync {
       currentBlock: BigInt,
       bestKnownNetworkBlock: BigInt
   ) {
-    def toStatus: SyncProtocol.Status = {
+    def toStatus: SyncProtocol.Status =
       if (startedFetching && bestKnownNetworkBlock != 0 && currentBlock < bestKnownNetworkBlock) {
         Status.Syncing(initialBlock, Progress(currentBlock, bestKnownNetworkBlock), None)
       } else if (startedFetching && currentBlock >= bestKnownNetworkBlock) {
@@ -164,7 +164,6 @@ object RegularSync {
       } else {
         Status.NotSyncing
       }
-    }
   }
   sealed trait ProgressProtocol
   object ProgressProtocol {

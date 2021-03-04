@@ -17,11 +17,11 @@ class BlockBroadcasterActor(
     with BlacklistSupport {
   import BlockBroadcasterActor._
 
-  override def receive: Receive = handlePeerListMessages orElse handleBlacklistMessages orElse handleBroadcastMessages
+  override def receive: Receive = handlePeerListMessages.orElse(handleBlacklistMessages).orElse(handleBroadcastMessages)
 
   private def handleBroadcastMessages: Receive = {
     case BroadcastBlock(newBlock) => broadcast.broadcastBlock(newBlock, handshakedPeers)
-    case BroadcastBlocks(blocks) => blocks.foreach(broadcast.broadcastBlock(_, handshakedPeers))
+    case BroadcastBlocks(blocks)  => blocks.foreach(broadcast.broadcastBlock(_, handshakedPeers))
   }
 }
 object BlockBroadcasterActor {

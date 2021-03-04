@@ -7,16 +7,15 @@ import monix.eval.Task
 import monix.reactive.{Consumer, Observable}
 
 class LoadableBloomFilter[A](bloomFilter: BloomFilter[A], source: Observable[Either[IterationError, A]]) {
-  val loadFromSource: Task[BloomFilterLoadingResult] = {
+  val loadFromSource: Task[BloomFilterLoadingResult] =
     source
       .consumeWith(Consumer.foldLeftTask(BloomFilterLoadingResult()) { (s, e) =>
         e match {
-          case Left(value) => Task.now(s.copy(error = Some(value)))
+          case Left(value)  => Task.now(s.copy(error = Some(value)))
           case Right(value) => Task(bloomFilter.put(value)).map(_ => s.copy(writtenElements = s.writtenElements + 1))
         }
       })
       .memoizeOnSuccess
-  }
 
   def put(elem: A): Boolean = bloomFilter.put(elem)
 
@@ -28,9 +27,8 @@ class LoadableBloomFilter[A](bloomFilter: BloomFilter[A], source: Observable[Eit
 object LoadableBloomFilter {
   def apply[A](expectedSize: Int, loadingSource: Observable[Either[IterationError, A]])(implicit
       f: Funnel[A]
-  ): LoadableBloomFilter[A] = {
+  ): LoadableBloomFilter[A] =
     new LoadableBloomFilter[A](BloomFilter.create[A](f, expectedSize), loadingSource)
-  }
 
   case class BloomFilterLoadingResult(writtenElements: Long, error: Option[IterationError])
   object BloomFilterLoadingResult {

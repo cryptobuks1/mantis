@@ -2,7 +2,7 @@ package io.iohk.ethereum.jsonrpc
 
 import io.iohk.ethereum.consensus.Protocol
 import io.iohk.ethereum.jsonrpc.serialization.JsonEncoder
-import org.json4s.{JLong, JInt, JObject, JString, JValue}
+import org.json4s.{JInt, JLong, JObject, JString, JValue}
 
 case class JsonRpcError(code: Int, message: String, data: Option[JValue])
 

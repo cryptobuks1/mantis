@@ -87,8 +87,7 @@ class EthInfoService(
   def chainId(req: ChainIdRequest): ServiceResponse[ChainIdResponse] =
     Task.now(Right(ChainIdResponse(blockchainConfig.chainId)))
 
-  /**
-    * Implements the eth_syncing method that returns syncing information if the node is syncing.
+  /** Implements the eth_syncing method that returns syncing information if the node is syncing.
     *
     * @return The syncing status if the node is syncing or None if not
     */
@@ -110,24 +109,23 @@ class EthInfoService(
             )
           )
         case Status.NotSyncing => SyncingResponse(None)
-        case Status.SyncDone => SyncingResponse(None)
+        case Status.SyncDone   => SyncingResponse(None)
       }
       .map(_.asRight)
 
-  def call(req: CallRequest): ServiceResponse[CallResponse] = {
+  def call(req: CallRequest): ServiceResponse[CallResponse] =
     Task {
       doCall(req)(stxLedger.simulateTransaction).map(r => CallResponse(r.vmReturnData))
     }
-  }
 
   def ieleCall(req: IeleCallRequest): ServiceResponse[IeleCallResponse] = {
     import req.tx
 
     val args = tx.arguments.getOrElse(Nil)
     val dataEither = (tx.function, tx.contractCode) match {
-      case (Some(function), None) => Right(rlp.encode(RLPList(function, args)))
+      case (Some(function), None)     => Right(rlp.encode(RLPList(function, args)))
       case (None, Some(contractCode)) => Right(rlp.encode(RLPList(contractCode, args)))
-      case _ => Left(JsonRpcError.InvalidParams("Iele transaction should contain either functionName or contractCode"))
+      case _                          => Left(JsonRpcError.InvalidParams("Iele transaction should contain either functionName or contractCode"))
     }
 
     dataEither match {
@@ -142,11 +140,10 @@ class EthInfoService(
     }
   }
 
-  def estimateGas(req: CallRequest): ServiceResponse[EstimateGasResponse] = {
+  def estimateGas(req: CallRequest): ServiceResponse[EstimateGasResponse] =
     Task {
       doCall(req)(stxLedger.binarySearchGasEstimation).map(gasUsed => EstimateGasResponse(gasUsed))
     }
-  }
 
   private def doCall[A](req: CallRequest)(
       f: (SignedTransactionWithSender, BlockHeader, Option[InMemoryWorldStateProxy]) => A
@@ -159,7 +156,7 @@ class EthInfoService(
     if (req.tx.gas.isDefined) Right[JsonRpcError, BigInt](req.tx.gas.get)
     else resolveBlock(BlockParam.Latest).map(r => r.block.header.gasLimit)
 
-  private def prepareTransaction(req: CallRequest): Either[JsonRpcError, SignedTransactionWithSender] = {
+  private def prepareTransaction(req: CallRequest): Either[JsonRpcError, SignedTransactionWithSender] =
     getGasLimit(req).map { gasLimit =>
       val fromAddress = req.tx.from
         .map(Address.apply) // `from` param, if specified
@@ -177,6 +174,5 @@ class EthInfoService(
       val fakeSignature = ECDSASignature(0, 0, 0.toByte)
       SignedTransactionWithSender(tx, fakeSignature, fromAddress)
     }
-  }
 
 }

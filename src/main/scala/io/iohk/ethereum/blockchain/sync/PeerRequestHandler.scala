@@ -41,8 +41,8 @@ class PeerRequestHandler[RequestMsg <: Message, ResponseMsg <: Message: ClassTag
   }
 
   override def receive: Receive = {
-    case MessageFromPeer(responseMsg: ResponseMsg, _) => handleResponseMsg(responseMsg)
-    case Timeout => handleTimeout()
+    case MessageFromPeer(responseMsg: ResponseMsg, _)  => handleResponseMsg(responseMsg)
+    case Timeout                                       => handleTimeout()
     case PeerDisconnected(peerId) if peerId == peer.id => handleTerminated()
   }
 
@@ -64,7 +64,7 @@ class PeerRequestHandler[RequestMsg <: Message, ResponseMsg <: Message: ClassTag
   def cleanupAndStop(): Unit = {
     timeout.cancel()
     peerEventBus ! Unsubscribe()
-    context stop self
+    context.stop(self)
   }
 }
 

@@ -49,7 +49,7 @@ class FaucetRpcServiceSpec
       TransactionSent(txHash)
     })
     faucetRpcService.sendFunds(request).runSyncUnsafe(Duration.Inf) match {
-      case Left(error) => fail(s"failure with error: $error")
+      case Left(error)     => fail(s"failure with error: $error")
       case Right(response) => response.txId shouldBe txHash
     }
   }
@@ -63,7 +63,7 @@ class FaucetRpcServiceSpec
       WalletRpcClientError(clientError)
     })
     faucetRpcService.sendFunds(request).runSyncUnsafe(Duration.Inf) match {
-      case Right(_) => fail()
+      case Right(_)    => fail()
       case Left(error) => error shouldBe JsonRpcError.LogicError(s"Faucet error: $clientError")
     }
   }
@@ -98,7 +98,7 @@ class FaucetRpcServiceSpec
       StatusResponse(WalletAvailable)
     })
     faucetRpcService.status(StatusRequest()).runSyncUnsafe(Duration.Inf) match {
-      case Left(error) => fail(s"failure with error: $error")
+      case Left(error)     => fail(s"failure with error: $error")
       case Right(response) => response shouldBe FaucetDomain.StatusResponse(WalletAvailable)
     }
   }
@@ -144,15 +144,13 @@ class FaucetRpcServiceSpec
     val faucetHandler = TestProbe()
 
     val faucetRpcService: FaucetRpcService = new FaucetRpcService(config) {
-      override def selectFaucetHandler()(implicit system: ActorSystem): Task[ActorRef] = {
+      override def selectFaucetHandler()(implicit system: ActorSystem): Task[ActorRef] =
         Task(faucetHandler.ref)
-      }
     }
 
     val faucetRpcServiceWithoutFaucetHandler: FaucetRpcService = new FaucetRpcService(config) {
-      override def selectFaucetHandler()(implicit system: ActorSystem): Task[ActorRef] = {
+      override def selectFaucetHandler()(implicit system: ActorSystem): Task[ActorRef] =
         Task.raiseError(new RuntimeException("time out"))
-      }
     }
   }
 

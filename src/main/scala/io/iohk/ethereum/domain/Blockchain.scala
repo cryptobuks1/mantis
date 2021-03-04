@@ -21,8 +21,7 @@ import monix.reactive.Observable
 
 import scala.annotation.tailrec
 
-/**
-  * Entity to be used to persist and query  Blockchain related objects (blocks, transactions, ommers)
+/** Entity to be used to persist and query  Blockchain related objects (blocks, transactions, ommers)
   */
 // scalastyle:off number.of.methods
 trait Blockchain {
@@ -30,31 +29,27 @@ trait Blockchain {
   type S <: Storage[S]
   type WS <: WorldStateProxy[WS, S]
 
-  /**
-    * Allows to query a blockHeader by block hash
+  /** Allows to query a blockHeader by block hash
     *
     * @param hash of the block that's being searched
     * @return [[BlockHeader]] if found
     */
   def getBlockHeaderByHash(hash: ByteString): Option[BlockHeader]
 
-  def getBlockHeaderByNumber(number: BigInt): Option[BlockHeader] = {
+  def getBlockHeaderByNumber(number: BigInt): Option[BlockHeader] =
     for {
       hash <- getHashByBlockNumber(number)
       header <- getBlockHeaderByHash(hash)
     } yield header
-  }
 
-  /**
-    * Allows to query a blockBody by block hash
+  /** Allows to query a blockBody by block hash
     *
     * @param hash of the block that's being searched
     * @return [[io.iohk.ethereum.domain.BlockBody]] if found
     */
   def getBlockBodyByHash(hash: ByteString): Option[BlockBody]
 
-  /**
-    * Allows to query for a block based on it's hash
+  /** Allows to query for a block based on it's hash
     *
     * @param hash of the block that's being searched
     * @return Block if found
@@ -65,8 +60,7 @@ trait Blockchain {
       body <- getBlockBodyByHash(hash)
     } yield Block(header, body)
 
-  /**
-    * Allows to query for a block based on it's number
+  /** Allows to query for a block based on it's number
     *
     * @param number Block number
     * @return Block if it exists
@@ -77,8 +71,7 @@ trait Blockchain {
       block <- getBlockByHash(hash)
     } yield block
 
-  /**
-    * Get an account for an address and a block number
+  /** Get an account for an address and a block number
     *
     * @param address address of the account
     * @param blockNumber the block that determines the state of the account
@@ -87,16 +80,14 @@ trait Blockchain {
 
   def getAccountProof(address: Address, blockNumber: BigInt): Option[Vector[MptNode]]
 
-  /**
-    * Get account storage at given position
+  /** Get account storage at given position
     *
     * @param rootHash storage root hash
     * @param position storage position
     */
   def getAccountStorageAt(rootHash: ByteString, position: BigInt, ethCompatibleStorage: Boolean): ByteString
 
-  /**
-    * Get a storage-value and its proof being the path from the root node until the last matching node.
+  /** Get a storage-value and its proof being the path from the root node until the last matching node.
     *
     * @param rootHash storage root hash
     * @param position storage position
@@ -107,29 +98,25 @@ trait Blockchain {
       ethCompatibleStorage: Boolean
   ): StorageProof
 
-  /**
-    * Returns the receipts based on a block hash
+  /** Returns the receipts based on a block hash
     * @param blockhash
     * @return Receipts if found
     */
   def getReceiptsByHash(blockhash: ByteString): Option[Seq[Receipt]]
 
-  /**
-    * Returns EVM code searched by it's hash
+  /** Returns EVM code searched by it's hash
     * @param hash Code Hash
     * @return EVM code if found
     */
   def getEvmCodeByHash(hash: ByteString): Option[ByteString]
 
-  /**
-    * Returns MPT node searched by it's hash
+  /** Returns MPT node searched by it's hash
     * @param hash Node Hash
     * @return MPT node
     */
   def getMptNodeByHash(hash: ByteString): Option[MptNode]
 
-  /**
-    * Looks up ChainWeight for a given chain
+  /** Looks up ChainWeight for a given chain
     * @param blockhash Hash of top block in the chain
     * @return ChainWeight if found
     */
@@ -146,27 +133,23 @@ trait Blockchain {
 
   def getLatestCheckpointBlockNumber(): BigInt
 
-  /**
-    * Persists full block along with receipts and chain weight
+  /** Persists full block along with receipts and chain weight
     * @param saveAsBestBlock - whether to save the block's number as current best block
     */
   def save(block: Block, receipts: Seq[Receipt], chainWeight: ChainWeight, saveAsBestBlock: Boolean): Unit
 
-  /**
-    * Persists a block in the underlying Blockchain Database
+  /** Persists a block in the underlying Blockchain Database
     * Note: all store* do not update the database immediately, rather they create
     * a [[io.iohk.ethereum.db.dataSource.DataSourceBatchUpdate]] which then has to be committed (atomic operation)
     *
     * @param block Block to be saved
     */
-  def storeBlock(block: Block): DataSourceBatchUpdate = {
+  def storeBlock(block: Block): DataSourceBatchUpdate =
     storeBlockHeader(block.header).and(storeBlockBody(block.header.hash, block.body))
-  }
 
   def removeBlock(hash: ByteString, withState: Boolean): Unit
 
-  /**
-    * Persists a block header in the underlying Blockchain Database
+  /** Persists a block header in the underlying Blockchain Database
     *
     * @param blockHeader Block to be saved
     */
@@ -184,8 +167,7 @@ trait Blockchain {
 
   def saveNode(nodeHash: NodeHash, nodeEncoded: NodeEncoded, blockNumber: BigInt): Unit
 
-  /**
-    * Returns a block hash given a block number
+  /** Returns a block hash given a block number
     *
     * @param number Number of the searchead block
     * @return Block hash if found
@@ -378,9 +360,8 @@ class BlockchainImpl(
   override def getTransactionLocation(txHash: ByteString): Option[TransactionLocation] =
     transactionMappingStorage.get(txHash)
 
-  override def storeBlockBody(blockHash: ByteString, blockBody: BlockBody): DataSourceBatchUpdate = {
+  override def storeBlockBody(blockHash: ByteString, blockBody: BlockBody): DataSourceBatchUpdate =
     blockBodiesStorage.put(blockHash, blockBody).and(saveTxsLocations(blockHash, blockBody))
-  }
 
   override def storeReceipts(blockHash: ByteString, receipts: Seq[Receipt]): DataSourceBatchUpdate =
     receiptStorage.put(blockHash, receipts)
@@ -388,14 +369,13 @@ class BlockchainImpl(
   override def storeEvmCode(hash: ByteString, evmCode: ByteString): DataSourceBatchUpdate =
     evmCodeStorage.put(hash, evmCode)
 
-  override def saveBestKnownBlocks(bestBlockNumber: BigInt, latestCheckpointNumber: Option[BigInt] = None): Unit = {
+  override def saveBestKnownBlocks(bestBlockNumber: BigInt, latestCheckpointNumber: Option[BigInt] = None): Unit =
     latestCheckpointNumber match {
       case Some(number) =>
         saveBestKnownBlockAndLatestCheckpointNumber(bestBlockNumber, number)
       case None =>
         saveBestKnownBlock(bestBlockNumber)
     }
-  }
 
   private def saveBestKnownBlock(bestBlockNumber: BigInt): Unit =
     bestKnownBlockAndLatestCheckpoint.updateAndGet(_.copy(bestBlockNumber = bestBlockNumber))
@@ -415,9 +395,8 @@ class BlockchainImpl(
   private def saveBlockNumberMapping(number: BigInt, hash: ByteString): DataSourceBatchUpdate =
     blockNumberMappingStorage.put(number, hash)
 
-  private def removeBlockNumberMapping(number: BigInt): DataSourceBatchUpdate = {
+  private def removeBlockNumberMapping(number: BigInt): DataSourceBatchUpdate =
     blockNumberMappingStorage.remove(number)
-  }
 
   override def removeBlock(blockHash: ByteString, withState: Boolean): Unit = {
     val maybeBlock = getBlockByHash(blockHash)
@@ -495,24 +474,22 @@ class BlockchainImpl(
 
     // not transactional part
     if (withState)
-      stateStorage.onBlockRollback(block.number, bestBlockNumber) { () => persistBestBlocksData() }
+      stateStorage.onBlockRollback(block.number, bestBlockNumber)(() => persistBestBlocksData())
   }
   // scalastyle:on method.length
 
-  def mptStateSavedKeys(): Observable[Either[IterationError, ByteString]] = {
+  def mptStateSavedKeys(): Observable[Either[IterationError, ByteString]] =
     (nodeStorage.storageContent.map(c => c.map(_._1)) ++ evmCodeStorage.storageContent.map(c => c.map(_._1)))
       .takeWhileInclusive(_.isRight)
-  }
 
-  /**
-    * Recursive function which try to find the previous checkpoint by traversing blocks from top to the bottom.
+  /** Recursive function which try to find the previous checkpoint by traversing blocks from top to the bottom.
     * In case of finding the checkpoint block number, the function will finish the job and return result
     */
   @tailrec
   private def findPreviousCheckpointBlockNumber(
       blockNumberToCheck: BigInt,
       latestCheckpointBlockNumber: BigInt
-  ): BigInt = {
+  ): BigInt =
     if (blockNumberToCheck > 0) {
       val maybePreviousCheckpointBlockNumber = for {
         currentBlock <- getBlockByNumber(blockNumberToCheck)
@@ -522,10 +499,9 @@ class BlockchainImpl(
 
       maybePreviousCheckpointBlockNumber match {
         case Some(previousCheckpointBlockNumber) => previousCheckpointBlockNumber
-        case None => findPreviousCheckpointBlockNumber(blockNumberToCheck - 1, latestCheckpointBlockNumber)
+        case None                                => findPreviousCheckpointBlockNumber(blockNumberToCheck - 1, latestCheckpointBlockNumber)
       }
     } else 0
-  }
 
   private def saveTxsLocations(blockHash: ByteString, blockBody: BlockBody): DataSourceBatchUpdate =
     blockBody.transactionList.zipWithIndex.foldLeft(transactionMappingStorage.emptyBatchUpdate) {
@@ -533,11 +509,10 @@ class BlockchainImpl(
         updates.and(transactionMappingStorage.put(tx.hash, TransactionLocation(blockHash, index)))
     }
 
-  private def removeTxsLocations(stxs: Seq[SignedTransaction]): DataSourceBatchUpdate = {
+  private def removeTxsLocations(stxs: Seq[SignedTransaction]): DataSourceBatchUpdate =
     stxs.map(_.hash).foldLeft(transactionMappingStorage.emptyBatchUpdate) { case (updates, hash) =>
       updates.and(transactionMappingStorage.remove(hash))
     }
-  }
 
   override type S = InMemoryWorldStateProxyStorage
   override type WS = InMemoryWorldStateProxy

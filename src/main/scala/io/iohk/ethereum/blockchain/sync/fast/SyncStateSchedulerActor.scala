@@ -38,13 +38,12 @@ class SyncStateSchedulerActor(
 
   implicit val monixScheduler = Scheduler(context.dispatcher)
 
-  def handleCommonMessages: Receive = handlePeerListMessages orElse handleBlacklistMessages
+  def handleCommonMessages: Receive = handlePeerListMessages.orElse(handleBlacklistMessages)
 
-  private def getFreePeers(state: DownloaderState) = {
+  private def getFreePeers(state: DownloaderState) =
     handshakedPeers.collect {
       case (peer, _) if !state.activeRequests.contains(peer.id) && !isBlacklisted(peer.id) => peer
     }
-  }
 
   private def requestNodes(request: PeerRequest): ActorRef = {
     log.info("Requesting {} from peer {}", request.nodes.size, request.peer)
@@ -67,11 +66,11 @@ class SyncStateSchedulerActor(
       log.info("Received {} state nodes in {} ms", nodeData.values.size, timeTaken)
       FastSyncMetrics.setMptStateDownloadTime(timeTaken)
 
-      context unwatch (sender())
+      context.unwatch(sender())
       self ! RequestData(nodeData, peer)
 
     case PeerRequestHandler.RequestFailed(peer, reason) =>
-      context unwatch (sender())
+      context.unwatch(sender())
       log.debug("Request to peer {} failed due to {}", peer.id, reason)
       self ! RequestFailed(peer, reason)
     case RequestTerminated(peer) =>
@@ -93,7 +92,7 @@ class SyncStateSchedulerActor(
   }
 
   def waitingForBloomFilterToLoad(lastReceivedCommand: Option[(SyncStateSchedulerActorCommand, ActorRef)]): Receive =
-    handleCommonMessages orElse {
+    handleCommonMessages.orElse {
       case BloomFilterResult(result) =>
         log.debug(
           "Loaded {} already known elements from storage to bloom filter the error while loading was {}",
@@ -126,13 +125,15 @@ class SyncStateSchedulerActor(
     log.info("Starting state sync to root {} on block {}", ByteStringUtils.hash2string(root), bn)
     //TODO handle case when we already have root i.e state is synced up to this point
     val initState = sync.initState(root).get
-    context become syncing(
-      SyncSchedulerActorState.initial(initState, initialStats, bn, initiator)
+    context.become(
+      syncing(
+        SyncSchedulerActorState.initial(initState, initialStats, bn, initiator)
+      )
     )
     self ! Sync
   }
 
-  def idle(processingStatistics: ProcessingStatistics): Receive = handleCommonMessages orElse {
+  def idle(processingStatistics: ProcessingStatistics): Receive = handleCommonMessages.orElse {
     case StartSyncingTo(root, bn) =>
       startSyncing(root, bn, processingStatistics, sender())
     case PrintInfo =>
@@ -141,7 +142,7 @@ class SyncStateSchedulerActor(
 
   private def finalizeSync(
       state: SyncSchedulerActorState
-  ): Unit = {
+  ): Unit =
     if (state.memBatch.nonEmpty) {
       log.debug("Persisting {} elements to blockchain and finalizing the state sync", state.memBatch.size)
       val finalState = sync.persistBatch(state.currentSchedulerState, state.targetBlock)
@@ -153,12 +154,11 @@ class SyncStateSchedulerActor(
       state.syncInitiator ! StateSyncFinished
       context.become(idle(ProcessingStatistics()))
     }
-  }
 
   private def processNodes(
       currentState: SyncSchedulerActorState,
       requestResult: RequestResult
-  ): ProcessingResult = {
+  ): ProcessingResult =
     requestResult match {
       case RequestData(nodeData, from) =>
         val (resp, newDownloaderState) = currentState.currentDownloaderState.handleRequestSuccess(from, nodeData)
@@ -186,7 +186,6 @@ class SyncStateSchedulerActor(
         val newDownloaderState = currentState.currentDownloaderState.handleRequestFailure(from)
         ProcessingResult(Left(DownloaderError(newDownloaderState, from, reason, blacklistPeer = true)))
     }
-  }
 
   private def handleRestart(
       currentState: SchedulerState,
@@ -202,7 +201,7 @@ class SyncStateSchedulerActor(
 
   // scalastyle:off cyclomatic.complexity method.length
   def syncing(currentState: SyncSchedulerActorState): Receive =
-    handleCommonMessages orElse handleRequestResults orElse {
+    handleCommonMessages.orElse(handleRequestResults).orElse {
       case Sync if currentState.hasRemainingPendingRequests && !currentState.restartHasBeenRequested =>
         val freePeers = getFreePeers(currentState.currentDownloaderState).toList
         (currentState.getRequestToProcess, NonEmptyList.fromList(freePeers)) match {
@@ -341,12 +340,11 @@ object SyncStateSchedulerActor {
       to: ActorRef,
       currentStats: ProcessingStatistics,
       currentState: SyncStateScheduler.SchedulerState
-  ): Unit = {
+  ): Unit =
     to ! StateSyncStats(
       currentStats.saved + currentState.memBatch.size,
       currentState.numberOfPendingRequests
     )
-  }
 
   case class StateSyncStats(saved: Long, missing: Long)
 
@@ -358,9 +356,8 @@ object SyncStateSchedulerActor {
       etcPeerManager: ActorRef,
       peerEventBus: ActorRef,
       scheduler: akka.actor.Scheduler
-  ): Props = {
+  ): Props =
     Props(new SyncStateSchedulerActor(sync, syncConfig, etcPeerManager, peerEventBus, scheduler))
-  }
 
   final case object PrintInfo
   final case object PrintInfoKey

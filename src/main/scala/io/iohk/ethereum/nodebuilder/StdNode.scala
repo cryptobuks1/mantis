@@ -11,8 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Await
 import scala.util.{Failure, Success, Try}
 
-/**
-  * A standard node is everything Ethereum prescribes except the consensus algorithm,
+/** A standard node is everything Ethereum prescribes except the consensus algorithm,
   * which is plugged in dynamically.
   *
   * The design is historically related to the initial cake-pattern-based
@@ -21,9 +20,8 @@ import scala.util.{Failure, Success, Try}
   * @see [[io.iohk.ethereum.nodebuilder.Node Node]]
   */
 abstract class BaseNode extends Node {
-  private[this] def loadGenesisData(): Unit = {
+  private[this] def loadGenesisData(): Unit =
     if (!Config.testmode) genesisDataLoader.loadGenesisData()
-  }
 
   private[this] def startPeerManager(): Unit = peerManager ! PeerManagerActor.StartConnecting
 
@@ -38,13 +36,12 @@ abstract class BaseNode extends Node {
   private[this] def startJsonRpcHttpServer(): Unit =
     maybeJsonRpcHttpServer match {
       case Right(jsonRpcServer) if jsonRpcConfig.httpServerConfig.enabled => jsonRpcServer.run()
-      case Left(error) if jsonRpcConfig.httpServerConfig.enabled => log.error(error)
-      case _ => //Nothing
+      case Left(error) if jsonRpcConfig.httpServerConfig.enabled          => log.error(error)
+      case _                                                              => //Nothing
     }
 
-  private[this] def startJsonRpcIpcServer(): Unit = {
+  private[this] def startJsonRpcIpcServer(): Unit =
     if (jsonRpcConfig.ipcServerConfig.enabled) jsonRpcIpcServer.run()
-  }
 
   private[this] def startMetricsClient(): Unit = {
     val metricsConfig = MetricsConfig(Config.config)

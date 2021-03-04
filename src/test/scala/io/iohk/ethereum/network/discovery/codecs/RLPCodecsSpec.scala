@@ -4,10 +4,10 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.flatspec.AnyFlatSpec
 import io.iohk.scalanet.discovery.crypto.PublicKey
 import io.iohk.scalanet.discovery.hash.Hash
-import io.iohk.scalanet.discovery.ethereum.{Node, EthereumNodeRecord}
+import io.iohk.scalanet.discovery.ethereum.{EthereumNodeRecord, Node}
 import io.iohk.scalanet.discovery.ethereum.v4.{Packet, Payload}
 import io.iohk.ethereum.network.discovery.Secp256k1SigAlg
-import io.iohk.ethereum.rlp.{RLPList, RLPEncoder, RLPDecoder, RLPValue, RLPEncodeable}
+import io.iohk.ethereum.rlp.{RLPDecoder, RLPEncodeable, RLPEncoder, RLPList, RLPValue}
 import scodec.Codec
 import scodec.bits.BitVector
 import java.net.InetAddress
@@ -35,7 +35,7 @@ class RLPCodecsSpec extends AnyFlatSpec with Matchers {
     BitVector(bytes)
   }
 
-  behavior of "RLPCodecs"
+  behavior.of("RLPCodecs")
 
   it should "encode a Ping with an ENR as 5 items" in {
     val ping = Payload.Ping(

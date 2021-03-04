@@ -244,13 +244,12 @@ object KeyStoreConfig {
     }
   }
 
-  def customKeyStoreConfig(path: String): KeyStoreConfig = {
+  def customKeyStoreConfig(path: String): KeyStoreConfig =
     new KeyStoreConfig {
       val keyStoreDir: String = path
       val minimalPassphraseLength: Int = 7
       val allowNoPassphrase: Boolean = true
     }
-  }
 }
 
 trait FilterConfig {
@@ -363,7 +362,7 @@ case class MonetaryPolicyConfig(
 }
 
 object MonetaryPolicyConfig {
-  def apply(mpConfig: TypesafeConfig): MonetaryPolicyConfig = {
+  def apply(mpConfig: TypesafeConfig): MonetaryPolicyConfig =
     MonetaryPolicyConfig(
       mpConfig.getInt("era-duration"),
       mpConfig.getDouble("reward-reduction-rate"),
@@ -371,7 +370,6 @@ object MonetaryPolicyConfig {
       BigInt(mpConfig.getString("first-era-reduced-block-reward")),
       BigInt(mpConfig.getString("first-era-constantinople-reduced-block-reward"))
     )
-  }
 }
 
 trait PruningConfig {
@@ -383,8 +381,8 @@ object PruningConfig {
     val pruningConfig = etcClientConfig.getConfig("pruning")
 
     val pruningMode: PruningMode = pruningConfig.getString("mode") match {
-      case "basic" => BasicPruning(pruningConfig.getInt("history"))
-      case "archive" => ArchivePruning
+      case "basic"    => BasicPruning(pruningConfig.getInt("history"))
+      case "archive"  => ArchivePruning
       case "inmemory" => InMemoryPruning(pruningConfig.getInt("history"))
     }
 
@@ -437,7 +435,7 @@ object VmConfig {
     mpConfig.getString("vm.mode") match {
       case "internal" => VmConfig(VmMode.Internal, None)
       case "external" => VmConfig(VmMode.External, Some(parseExternalConfig()))
-      case other => throw new RuntimeException(s"Unknown VM mode: $other. Expected one of: local, external")
+      case other      => throw new RuntimeException(s"Unknown VM mode: $other. Expected one of: local, external")
     }
   }
 }

@@ -1,16 +1,16 @@
 package io.iohk.ethereum.network.discovery.codecs
 
 import io.iohk.scalanet.discovery.crypto.{PublicKey, Signature}
-import io.iohk.scalanet.discovery.ethereum.{Node, EthereumNodeRecord}
+import io.iohk.scalanet.discovery.ethereum.{EthereumNodeRecord, Node}
 import io.iohk.scalanet.discovery.ethereum.v4.Payload
 import io.iohk.scalanet.discovery.hash.Hash
 import io.iohk.ethereum.rlp
-import io.iohk.ethereum.rlp.{RLPCodec, RLPList, RLPEncoder}
+import io.iohk.ethereum.rlp.{RLPCodec, RLPEncoder, RLPList}
 import io.iohk.ethereum.rlp.RLPCodec.Ops
 import io.iohk.ethereum.rlp.RLPImplicits._
 import io.iohk.ethereum.rlp.RLPImplicitConversions.toEncodeable
 import io.iohk.ethereum.rlp.RLPImplicitDerivations._
-import scodec.{Codec, Attempt, Err, DecodeResult}
+import scodec.{Attempt, Codec, DecodeResult, Err}
 import scodec.bits.{BitVector, ByteVector}
 import java.net.InetAddress
 import scala.util.Try
@@ -131,7 +131,7 @@ trait ContentCodecs {
 
 trait PayloadCodecs { self: ContentCodecs =>
 
-  private implicit val payloadDerivationPolicy =
+  implicit private val payloadDerivationPolicy =
     DerivationPolicy.default.copy(omitTrailingOptionals = true)
 
   implicit val pingRLPCodec: RLPCodec[Payload.Ping] =
@@ -166,17 +166,17 @@ trait PayloadCodecs { self: ContentCodecs =>
       (payload: Payload) => {
         val (packetType, packetData) =
           payload match {
-            case x: Payload.Ping => PacketType.Ping -> rlp.encode(x)
-            case x: Payload.Pong => PacketType.Pong -> rlp.encode(x)
-            case x: Payload.FindNode => PacketType.FindNode -> rlp.encode(x)
-            case x: Payload.Neighbors => PacketType.Neighbors -> rlp.encode(x)
-            case x: Payload.ENRRequest => PacketType.ENRRequest -> rlp.encode(x)
+            case x: Payload.Ping        => PacketType.Ping -> rlp.encode(x)
+            case x: Payload.Pong        => PacketType.Pong -> rlp.encode(x)
+            case x: Payload.FindNode    => PacketType.FindNode -> rlp.encode(x)
+            case x: Payload.Neighbors   => PacketType.Neighbors -> rlp.encode(x)
+            case x: Payload.ENRRequest  => PacketType.ENRRequest -> rlp.encode(x)
             case x: Payload.ENRResponse => PacketType.ENRResponse -> rlp.encode(x)
           }
 
         Attempt.successful(BitVector(packetType.toByte +: packetData))
       },
-      (bits: BitVector) => {
+      (bits: BitVector) =>
         bits.consumeThen(8)(
           err => Attempt.failure(Err(err)),
           (head, tail) => {
@@ -185,19 +185,18 @@ trait PayloadCodecs { self: ContentCodecs =>
 
             val tryPayload: Try[Payload] = Try {
               packetType match {
-                case PacketType.Ping => rlp.decode[Payload.Ping](packetData)
-                case PacketType.Pong => rlp.decode[Payload.Pong](packetData)
-                case PacketType.FindNode => rlp.decode[Payload.FindNode](packetData)
-                case PacketType.Neighbors => rlp.decode[Payload.Neighbors](packetData)
-                case PacketType.ENRRequest => rlp.decode[Payload.ENRRequest](packetData)
+                case PacketType.Ping        => rlp.decode[Payload.Ping](packetData)
+                case PacketType.Pong        => rlp.decode[Payload.Pong](packetData)
+                case PacketType.FindNode    => rlp.decode[Payload.FindNode](packetData)
+                case PacketType.Neighbors   => rlp.decode[Payload.Neighbors](packetData)
+                case PacketType.ENRRequest  => rlp.decode[Payload.ENRRequest](packetData)
                 case PacketType.ENRResponse => rlp.decode[Payload.ENRResponse](packetData)
-                case other => throw new RuntimeException(s"Unknown packet type: ${other}")
+                case other                  => throw new RuntimeException(s"Unknown packet type: ${other}")
               }
             }
 
             Attempt.fromTry(tryPayload.map(DecodeResult(_, BitVector.empty)))
           }
         )
-      }
     )
 }

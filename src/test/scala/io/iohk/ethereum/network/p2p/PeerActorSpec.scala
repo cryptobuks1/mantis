@@ -70,7 +70,7 @@ class PeerActorSpec
 
     rlpxConnection.watch(peer)
 
-    (0 to 3) foreach { _ =>
+    (0 to 3).foreach { _ =>
       time.advance(5.seconds)
       rlpxConnection.expectMsgClass(classOf[RLPxConnectionHandler.ConnectTo])
       rlpxConnection.reply(RLPxConnectionHandler.ConnectionFailed)
@@ -80,7 +80,7 @@ class PeerActorSpec
   }
 
   it should "try to reconnect on broken rlpx connection" in new NodeStatusSetup with HandshakerSetup {
-    override implicit lazy val system = ActorSystem("PeerActorSpec_System")
+    implicit override lazy val system = ActorSystem("PeerActorSpec_System")
     override def protocol: Version = ProtocolVersions.PV63
 
     val time = new VirtualTime

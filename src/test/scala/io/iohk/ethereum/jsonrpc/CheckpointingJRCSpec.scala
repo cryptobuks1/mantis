@@ -8,7 +8,7 @@ import io.iohk.ethereum.jsonrpc.JsonRpcError.InvalidParams
 import io.iohk.ethereum.security.SecureRandomBuilder
 import io.iohk.ethereum.nodebuilder.ApisBuilder
 import io.iohk.ethereum.utils.{ByteStringUtils, Config}
-import io.iohk.ethereum.{Fixtures, NormalPatience, crypto}
+import io.iohk.ethereum.{crypto, Fixtures, NormalPatience}
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import org.json4s.JsonAST._

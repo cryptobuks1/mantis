@@ -17,14 +17,12 @@ import io.iohk.ethereum.utils.MockClock
 class TimeSlotStatsSpec extends AnyFlatSpec with Matchers with ScalaCheckDrivenPropertyChecks {
   import TimeSlotStatsSpec._
 
-  behavior of "TimeSlotStats"
+  behavior.of("TimeSlotStats")
 
   it should "add new keys to the last timeslot" in test {
     for {
       stats <- add("foo", 1)
-    } yield {
-      stats.buffer(0).slotStats("foo") shouldBe 1
-    }
+    } yield stats.buffer(0).slotStats("foo") shouldBe 1
   }
 
   it should "merge keys in the last timeslot" in test {
@@ -45,9 +43,7 @@ class TimeSlotStatsSpec extends AnyFlatSpec with Matchers with ScalaCheckDrivenP
       stats0 <- add("foo", 1)
       _ <- windClock(-defaultSlotDuration - 1.millis)
       stats1 <- add("foo", 2)
-    } yield {
-      stats0.buffer shouldBe stats1.buffer
-    }
+    } yield stats0.buffer shouldBe stats1.buffer
   }
 
   it should "add new slots for the next timeslot" in test {
@@ -77,7 +73,7 @@ class TimeSlotStatsSpec extends AnyFlatSpec with Matchers with ScalaCheckDrivenP
         entry.slotStats should not contain key("foo")
       }
       Inspectors.forExactly(2, stats.buffer.values) { entry =>
-        entry.slotStats should contain key ("bar")
+        (entry.slotStats should contain).key("bar")
       }
     }
   }
@@ -128,27 +124,21 @@ class TimeSlotStatsSpec extends AnyFlatSpec with Matchers with ScalaCheckDrivenP
   it should "aggregate all stats" in testAggregate {
     for {
       stats <- getStats
-    } yield {
-      stats.getAll() shouldBe Map("foo" -> 3, "bar" -> 6)
-    }
+    } yield stats.getAll() shouldBe Map("foo" -> 3, "bar" -> 6)
   }
 
   it should "aggregate stats that still fall in the window" in testAggregate {
     for {
       _ <- windClock(defaultSlotDuration * 2)
       stats <- getStats
-    } yield {
-      stats.getAll() should not be empty
-    }
+    } yield stats.getAll() should not be empty
   }
 
   it should "not aggregate beyond the window" in testAggregate {
     for {
       _ <- windClock(defaultSlotDuration * (defaultSlotCount + 1))
       stats <- getStats
-    } yield {
-      stats.getAll() shouldBe empty
-    }
+    } yield stats.getAll() shouldBe empty
   }
 
   it should "handle 0 in configuration" in {
@@ -182,7 +172,7 @@ class TimeSlotStatsSpec extends AnyFlatSpec with Matchers with ScalaCheckDrivenP
     testRandomAggregation[Int, Vector[Int]](_ ++ _)
   }
 
-  def testRandomAggregation[K: Arbitrary, V: Arbitrary: Monoid](f: (V, V) => V): Unit = {
+  def testRandomAggregation[K: Arbitrary, V: Arbitrary: Monoid](f: (V, V) => V): Unit =
     forAll(genTimeSlotStats[K, V]) { case (stats, clock, window) =>
       val timestamp = clock.millis()
       val (start, end) = stats.slotRange(timestamp, window)
@@ -212,7 +202,6 @@ class TimeSlotStatsSpec extends AnyFlatSpec with Matchers with ScalaCheckDrivenP
         stats.get(key, Some(window)) shouldBe expected
       }
     }
-  }
 }
 
 object TimeSlotStatsSpec {

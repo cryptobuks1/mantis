@@ -6,8 +6,7 @@ import io.iohk.ethereum.utils.ByteStringUtils.Padding
 
 import scala.annotation.tailrec
 
-/**
-  * Holds a program's code and provides utilities for accessing it (defaulting to zeroes when out of scope)
+/** Holds a program's code and provides utilities for accessing it (defaulting to zeroes when out of scope)
   *
   * @param code the EVM bytecode as bytes
   */
@@ -23,15 +22,14 @@ case class Program(code: ByteString) {
 
   lazy val validJumpDestinations: Set[Int] = validJumpDestinationsAfterPosition(0)
 
-  /**
-    * Returns the valid jump destinations of the program after a given position
+  /** Returns the valid jump destinations of the program after a given position
     * See section 9.4.3 in Yellow Paper for more detail.
     *
     * @param pos from where to start searching for valid jump destinations in the code.
     * @param accum with the previously obtained valid jump destinations.
     */
   @tailrec
-  private def validJumpDestinationsAfterPosition(pos: Int, accum: Set[Int] = Set.empty): Set[Int] = {
+  private def validJumpDestinationsAfterPosition(pos: Int, accum: Set[Int] = Set.empty): Set[Int] =
     if (pos < 0 || pos >= length) accum
     else {
       val byte = code(pos)
@@ -40,11 +38,10 @@ case class Program(code: ByteString) {
       ) // we only need to check PushOp and JUMPDEST, they are both present in Frontier
       opCode match {
         case Some(pushOp: PushOp) => validJumpDestinationsAfterPosition(pos + pushOp.i + 2, accum)
-        case Some(JUMPDEST) => validJumpDestinationsAfterPosition(pos + 1, accum + pos)
-        case _ => validJumpDestinationsAfterPosition(pos + 1, accum)
+        case Some(JUMPDEST)       => validJumpDestinationsAfterPosition(pos + 1, accum + pos)
+        case _                    => validJumpDestinationsAfterPosition(pos + 1, accum)
       }
     }
-  }
 
   lazy val codeHash: ByteString =
     kec256(code)

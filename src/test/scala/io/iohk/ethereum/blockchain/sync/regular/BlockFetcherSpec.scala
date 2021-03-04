@@ -20,7 +20,7 @@ import io.iohk.ethereum.network.p2p.messages.CommonMessages.NewBlock
 import io.iohk.ethereum.network.p2p.messages.PV62._
 import io.iohk.ethereum.network.p2p.messages.{Codes, PV64}
 import io.iohk.ethereum.security.SecureRandomBuilder
-import io.iohk.ethereum.{BlockHelpers, Timeouts, WithActorSystemShutDown, crypto}
+import io.iohk.ethereum.{crypto, BlockHelpers, Timeouts, WithActorSystemShutDown}
 import org.scalatest.freespec.AnyFreeSpecLike
 import org.scalatest.matchers.should.Matchers
 

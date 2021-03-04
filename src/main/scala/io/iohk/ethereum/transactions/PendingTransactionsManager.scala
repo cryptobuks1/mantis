@@ -57,19 +57,17 @@ class PendingTransactionsManager(
   import PendingTransactionsManager._
   import akka.pattern.ask
 
-  private[this] final val TransactionsPoolSizeGauge =
+  final private[this] val TransactionsPoolSizeGauge =
     metrics.gauge(
       "transactions.pool.size.gauge",
       () => pendingTransactions.size().toDouble
     )
 
-  /**
-    * stores information which tx hashes are "known" by which peers
+  /** stores information which tx hashes are "known" by which peers
     */
   var knownTransactions: Map[ByteString, Set[PeerId]] = Map.empty
 
-  /**
-    * stores all pending transactions
+  /** stores all pending transactions
     */
   val pendingTransactions: Cache[ByteString, PendingTransaction] = CacheBuilder
     .newBuilder()
@@ -110,7 +108,7 @@ class PendingTransactionsManager(
           .mapTo[Peers]
           .map(_.handshaked)
           .filter(_.nonEmpty)
-          .foreach { peers => self ! NotifyPeers(transactionsToAdd.toSeq, peers) }
+          .foreach(peers => self ! NotifyPeers(transactionsToAdd.toSeq, peers))
       }
 
     case AddOrOverrideTransaction(newStx) =>
@@ -131,7 +129,7 @@ class PendingTransactionsManager(
         .mapTo[Peers]
         .map(_.handshaked)
         .filter(_.nonEmpty)
-        .foreach { peers => self ! NotifyPeers(Seq(newPendingTx), peers) }
+        .foreach(peers => self ! NotifyPeers(Seq(newPendingTx), peers))
 
     case NotifyPeers(signedTransactions, peers) =>
       pendingTransactions.cleanUp()

@@ -13,7 +13,7 @@ import io.iohk.ethereum.faucet.jsonrpc.WalletService
 import io.iohk.ethereum.jsonrpc.client.RpcClient.{ParserError, RpcClientError}
 import io.iohk.ethereum.keystore.KeyStore.DecryptionFailed
 import io.iohk.ethereum.keystore.Wallet
-import io.iohk.ethereum.{NormalPatience, WithActorSystemShutDown, crypto}
+import io.iohk.ethereum.{crypto, NormalPatience, WithActorSystemShutDown}
 import monix.eval.Task
 import org.bouncycastle.util.encoders.Hex
 import org.scalamock.scalatest.MockFactory
@@ -139,9 +139,8 @@ class FaucetHandlerSpec
       stopController()
     }
 
-    def stopController(): Unit = {
+    def stopController(): Unit =
       awaitCond(gracefulStop(faucetHandler, actorAskTimeout.duration).futureValue)
-    }
   }
 }
 

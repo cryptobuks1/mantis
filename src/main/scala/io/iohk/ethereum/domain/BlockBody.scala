@@ -1,7 +1,7 @@
 package io.iohk.ethereum.domain
 
 import io.iohk.ethereum.domain.BlockHeaderImplicits._
-import io.iohk.ethereum.rlp.{RLPEncodeable, RLPList, RLPSerializable, rawDecode}
+import io.iohk.ethereum.rlp.{rawDecode, RLPEncodeable, RLPList, RLPSerializable}
 
 case class BlockBody(transactionList: Seq[SignedTransaction], uncleNodesList: Seq[BlockHeader]) {
   override def toString: String =

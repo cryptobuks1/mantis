@@ -5,19 +5,18 @@ import io.iohk.ethereum.utils.LoggingUtils.getClassName
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
 import io.micrometer.core.instrument.config.MeterFilter
 import io.micrometer.core.instrument._
-import io.micrometer.prometheus.{PrometheusMeterRegistry, PrometheusConfig}
+import io.micrometer.prometheus.{PrometheusConfig, PrometheusMeterRegistry}
 import io.prometheus.client.CollectorRegistry
 import io.micrometer.jmx.JmxMeterRegistry
 
 object MeterRegistryBuilder extends Logger {
 
-  private[this] final val StdMetricsClock = Clock.SYSTEM
+  final private[this] val StdMetricsClock = Clock.SYSTEM
 
   private[this] def onMeterAdded(m: Meter): Unit =
     log.debug(s"New ${getClassName(m)} metric: " + m.getId.getName)
 
-  /**
-    * Build our meter registry consist in:
+  /** Build our meter registry consist in:
     * 1. Create each Meter registry
     * 2. Config the resultant composition
     */
@@ -46,9 +45,8 @@ object MeterRegistryBuilder extends Logger {
     registry
       .config()
       .meterFilter(new MeterFilter {
-        override def map(id: Meter.Id): Meter.Id = {
+        override def map(id: Meter.Id): Meter.Id =
           id.withName(MetricsUtils.mkNameWithPrefix(metricsPrefix)(id.getName))
-        }
       })
       .onMeterAdded(onMeterAdded)
 

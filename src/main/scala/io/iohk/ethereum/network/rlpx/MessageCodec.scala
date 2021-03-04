@@ -23,7 +23,7 @@ class MessageCodec(frameCodec: FrameCodec, messageDecoder: MessageDecoder, proto
   @volatile
   private var remotePeerP2pVersion: Option[Long] = None
 
-  private def setRemoteVersionBasedOnHelloMessage(m: Message): Unit = {
+  private def setRemoteVersionBasedOnHelloMessage(m: Message): Unit =
     if (remotePeerP2pVersion.isEmpty) {
       m match {
         case hello: Hello =>
@@ -31,13 +31,12 @@ class MessageCodec(frameCodec: FrameCodec, messageDecoder: MessageDecoder, proto
         case _ =>
       }
     }
-  }
 
   // TODO: ETCM-402 - messageDecoder should use negotiated protocol version
   def readMessages(data: ByteString): Seq[Try[Message]] = {
     val frames = frameCodec.readFrames(data)
 
-    frames map { frame =>
+    frames.map { frame =>
       val frameData = frame.payload.toArray
       val payloadTry =
         if (remotePeerP2pVersion.exists(version => version >= EtcHelloExchangeState.P2pVersion)) {
@@ -54,20 +53,19 @@ class MessageCodec(frameCodec: FrameCodec, messageDecoder: MessageDecoder, proto
     }
   }
 
-  private def decompressData(data: Array[Byte]): Try[Array[Byte]] = {
+  private def decompressData(data: Array[Byte]): Try[Array[Byte]] =
     Try(Snappy.uncompressedLength(data)).flatMap { decompressedSize =>
       if (decompressedSize > maxDecompressedLength)
         Failure(new RuntimeException("Message size larger than 16mb"))
       else
         Try(Snappy.uncompress(data))
     }
-  }
 
   def encodeMessage(serializable: MessageSerializable): ByteString = {
     val encoded: Array[Byte] = serializable.toBytes
     val numFrames = Math.ceil(encoded.length / MaxFramePayloadSize.toDouble).toInt
     val contextId = contextIdCounter.incrementAndGet()
-    val frames = (0 until numFrames) map { frameNo =>
+    val frames = (0 until numFrames).map { frameNo =>
       val framedPayload = encoded.drop(frameNo * MaxFramePayloadSize).take(MaxFramePayloadSize)
       val payload =
         if (

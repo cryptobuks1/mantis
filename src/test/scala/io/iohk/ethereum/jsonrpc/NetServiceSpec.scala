@@ -9,7 +9,7 @@ import io.iohk.ethereum.jsonrpc.NetService._
 import io.iohk.ethereum.security.SecureRandomBuilder
 import io.iohk.ethereum.network.{Peer, PeerActor, PeerManagerActor}
 import io.iohk.ethereum.utils.{NodeStatus, ServerStatus}
-import io.iohk.ethereum.{NormalPatience, crypto}
+import io.iohk.ethereum.{crypto, NormalPatience}
 import monix.execution.Scheduler.Implicits.global
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.flatspec.AnyFlatSpec
